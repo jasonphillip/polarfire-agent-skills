@@ -7,7 +7,7 @@ repositories:
   - name: vectorblox-sdk
     url: https://github.com/Microchip-Vectorblox/VectorBlox-SDK.git
     commit: 4186f9a
-    licence: MIT
+    licence: none (no licence file; treated as all rights reserved; fetched by the user, never redistributed)
     role: operator table, compiler and simulator reference
   - name: icicle-kit-reference-design
     url: https://github.com/polarfire-soc/icicle-kit-reference-design.git

@@ -131,7 +131,7 @@ def evaluate(name, run_dir):
     return report
 
 
-def export(name, run_dir):
+def export(name, run_dir, form="conv1x1"):
     import tensorflow as tf
     from .adapters import to_keras, verify_transliteration
     from .inspect import inspect_model
@@ -139,7 +139,7 @@ def export(name, run_dir):
     parts = load_data(run_dir)
     model = load_model(name, run_dir)
     shape = tuple(cfg["input"]["shape"])
-    keras_model = to_keras(model, shape, cfg["adapter"])
+    keras_model = to_keras(model, shape, cfg["adapter"], form=form)
     verify_transliteration(model, keras_model, parts["test_x"][:1], cfg["adapter"])
     spec = cfg["calibration"]
     source = parts[f"{spec['split']}_x"]
@@ -150,6 +150,8 @@ def export(name, run_dir):
             value = source[idx:idx+1]
             if cfg["adapter"] == "conv2d_1k":
                 value = value.transpose(0, 2, 3, 1)
+            elif cfg["adapter"] == "mlp" and form == "conv1x1":
+                value = value.reshape(1, 1, 1, -1)
             yield [value.astype(np.float32)]
     def convert(new_quantizer):
         converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
@@ -185,6 +187,10 @@ def export(name, run_dir):
                 "training_quantization_survival": "No Torch scales or zero points are reused; converter regenerates all tensor scales and zero points. Calibration sets activation ranges; copied weights set weight ranges.",
                 "qat_fake_quant_observers": qats,
                 "converter_quantization": {t["name"]: t["quantization"] for t in result["tensors"] if t["quantization"]["scales"]}}
+    if cfg["adapter"] == "mlp":
+        manifest.update({"export_form": form,
+                         "export_form_reason": "SDK 2.0.3 simulator returns a constant for a fused ReLU FULLY_CONNECTED chain; Conv2D 1x1 matches TFLite.",
+                         "export_form_probe": "evidence/2026-10-12-toolshost/probe-c8-fc-chains.md"})
     write_json(Path(run_dir) / "export.manifest.json", manifest)
     return manifest
 
@@ -232,6 +238,8 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
         value = sample[None]
         if cfg["adapter"] == "conv2d_1k":
             value = value.transpose(0, 2, 3, 1)
+        elif cfg["adapter"] == "mlp" and len(i["shape"]) == 4:
+            value = value.reshape(i["shape"])
         scale, zero = i["quantization"]
         quantized = np.clip(np.rint(value / scale + zero), -128, 127).astype(np.int8)
         interpreter.set_tensor(i["index"], quantized); interpreter.invoke()

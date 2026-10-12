@@ -32,7 +32,11 @@ Use one run directory for manual stages:
 `data` writes `dataset.npz` and `dataset.manifest.json`. Add `--import /path/to/source.npz` to validate and copy input arrays.
 `train` writes `model.pt` and `training.json`. `eval` writes `eval.json`.
 `export` writes `model.tflite` and `export.manifest.json`.
+MLP exports use 1x1 Conv2D by default. Pass `--form fc` to `export` or `example run` for an FC experiment.
 `inspect` prints operators and tensors and writes `inspect.json` when given a run directory.
+It rejects a fused FULLY_CONNECTED chain by default. Pass `--allow-fc-chain` to inspect it for experiments.
+It also rejects `PACK` and `STRIDED_SLICE` despite their SDK table entries.
+Per-channel quantization is informational; the C6 tools-host probe compiled and matched TFLite.
 It reads `docs/OPS.md` from the SDK checkout named in `deps.lock` at run time. The kit does not contain a copy.
 Use `--sdk-root /absolute/path/to/VectorBlox-SDK` on `inspect` or `example run`, or set `PFKIT_SDK_ROOT`.
 If the table is absent, `inspect` reports its path and asks you to run `pfkit deps fetch`.

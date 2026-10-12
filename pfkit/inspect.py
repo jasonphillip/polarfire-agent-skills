@@ -33,9 +33,10 @@ def inspect_model(path, sdk_root=None):
     table = ops_table(sdk_root)
     from tensorflow.lite.python import schema_py_generated as schema
     model = schema.Model.GetRootAsModel(Path(path).read_bytes(), 0)
-    operators, tensors, flags = [], [], []
+    operators, tensors, flags, blocking_flags = [], [], [], []
     for sg_index in range(model.SubgraphsLength()):
         sg = model.Subgraphs(sg_index)
+        sg_operators = []
         tensor_base = len(tensors)
         for i in range(sg.TensorsLength()):
             t = sg.Tensors(i)
@@ -98,6 +99,10 @@ def inspect_model(path, sdk_root=None):
                             flags.append(f"unsupported {label} {value} for {name} at {i}")
             if name == "SHAPE":
                 flags.append(f"SHAPE operator at {i}")
+            if name in ("PACK", "STRIDED_SLICE"):
+                flag = f"sdk_2_0_3_compile_failure: {name} at {i}; evidence/2026-10-12-toolshost/probes-c2-c6.log"
+                flags.append(flag)
+                blocking_flags.append(flag)
             if name in ("RESHAPE", "TRANSPOSE", "SPLIT") and len(item["inputs"]) > 1:
                 shape_idx = item["inputs"][1]
                 if shape_idx >= 0:
@@ -105,7 +110,22 @@ def inspect_model(path, sdk_root=None):
                     if not buf or buf.DataLength() == 0:
                         flags.append(f"non-constant shape tensor {shape_idx} at {i}")
             operators.append(item)
+            sg_operators.append(item)
+        for item in sg_operators:
+            if item["operator"] != "FULLY_CONNECTED":
+                continue
+            activation = item["options"].get("FusedActivationFunction", schema.ActivationFunctionType.NONE)
+            if activation == schema.ActivationFunctionType.NONE:
+                continue
+            consumers = [other["index"] for other in sg_operators if other["index"] > item["index"]
+                         and set(item["outputs"]) & set(other["inputs"])]
+            if consumers:
+                flag = (f"fc_chain_fused_activation: FULLY_CONNECTED at {item['index']} feeds operators {consumers}; "
+                        "SDK 2.0.3 simulator returned a constant; evidence/2026-10-12-toolshost/probe-c8-fc-chains.md")
+                flags.append(flag)
+                blocking_flags.append(flag)
     return {"operators": operators, "tensors": tensors, "flags": flags,
+            "blocking_flags": blocking_flags,
             "unsupported": [o["operator"] for o in operators if not o["supported"]],
             "limit_violations": [f for f in flags if f.startswith("unsupported ") and not f.startswith("unsupported operator ")]}
 

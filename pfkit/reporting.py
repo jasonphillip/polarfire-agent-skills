@@ -1,9 +1,8 @@
 """Collect local provenance without invoking Git commands."""
 from __future__ import annotations
 import json
-import subprocess
-import sys
 from datetime import datetime, timezone
+from importlib.metadata import distributions
 from pathlib import Path
 from .pipeline import ROOT, sha256, write_json
 
@@ -42,8 +41,9 @@ def append_log(run_dir, command, code):
 def report(run_dir):
     directory = Path(run_dir)
     directory.mkdir(parents=True, exist_ok=True)
-    freeze = subprocess.run([sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True)
-    (directory / "pip-freeze.txt").write_text(freeze.stdout if freeze.returncode == 0 else freeze.stderr)
+    versions = sorted({f"{name}=={dist.version}" for dist in distributions()
+                       if (name := dist.metadata.get("Name"))})
+    (directory / "pip-freeze.txt").write_text("\n".join(versions) + "\n")
     revs = {"kit": git_revision(ROOT)}
     for name in ("tychon-quantum-sensing", "vectorblox-sdk", "icicle-kit-reference-design"):
         revs[name] = git_revision(ROOT / "deps" / name)

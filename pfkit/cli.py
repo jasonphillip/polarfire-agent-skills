@@ -31,10 +31,13 @@ def parser():
             stage.add_argument("--import", dest="import_path")
         if name == "train":
             stage.add_argument("--epochs", type=int)
+        if name == "export":
+            stage.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
     inspect = sub.add_parser("inspect")
     inspect.add_argument("model")
     inspect.add_argument("--run-dir")
     inspect.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
+    inspect.add_argument("--allow-fc-chain", action="store_true", help="allow measured SDK 2.0.3 simulator failure")
     compile_p = sub.add_parser("compile")
     compile_p.add_argument("model")
     compile_p.add_argument("--output", required=True)
@@ -75,6 +78,8 @@ def parser():
     run.add_argument("--run-dir")
     run.add_argument("--full", action="store_true")
     run.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
+    run.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
+    run.add_argument("--allow-fc-chain", action="store_true", help="allow measured SDK 2.0.3 simulator failure")
     return p
 
 
@@ -127,15 +132,16 @@ def _dispatch(args):
     if args.command == "eval":
         return steps.evaluate(args.example, _run_dir(args))
     if args.command == "export":
-        return steps.export(args.example, _run_dir(args))
+        return steps.export(args.example, _run_dir(args), args.form)
     if args.command == "inspect":
         from .inspect import inspect_model, print_inspection
         result = inspect_model(args.model, args.sdk_root)
         print_inspection(result)
         if args.run_dir:
             steps.write_json(Path(args.run_dir) / "inspect.json", result)
-        if result["unsupported"] or result["limit_violations"]:
-            raise ValueError(f"Unsupported TFLite operators or options: {result['unsupported']}, {result['limit_violations']}")
+        blocking = [flag for flag in result["blocking_flags"] if not (args.allow_fc_chain and flag.startswith("fc_chain_fused_activation"))]
+        if result["unsupported"] or result["limit_violations"] or blocking:
+            raise ValueError(f"Unsupported TFLite operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
         return result
     if args.command in ("compile", "sim", "infer"):
         from .remote_ops import compile_plan, sim_plan, infer_plan, run_plan
@@ -173,12 +179,13 @@ def _dispatch(args):
             if stage == "data": result = steps.data(args.name, run_dir, args.full)
             elif stage == "train": result = steps.train(args.name, run_dir, args.full)
             elif stage == "eval": result = steps.evaluate(args.name, run_dir)
-            elif stage == "export": result = steps.export(args.name, run_dir)
+            elif stage == "export": result = steps.export(args.name, run_dir, args.form)
             elif stage == "inspect":
                 from .inspect import inspect_model
                 result = inspect_model(run_dir / "model.tflite", args.sdk_root)
                 steps.write_json(run_dir / "inspect.json", result)
-                if result["unsupported"] or result["limit_violations"]: raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}")
+                blocking = [flag for flag in result["blocking_flags"] if not (args.allow_fc_chain and flag.startswith("fc_chain_fused_activation"))]
+                if result["unsupported"] or result["limit_violations"] or blocking: raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
             elif stage == "compile":
                 from .remote_ops import compile_plan, run_plan
                 records = run_plan(compile_plan(run_dir / "model.tflite", run_dir / "model.vnnx", ROOT / "toolshost.yaml"))

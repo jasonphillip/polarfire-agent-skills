@@ -72,6 +72,98 @@ def test_inspect_flags_shape_and_float(tmp_path):
     assert "SHAPE" in result["unsupported"]
 
 
+def test_mlp_export_forms_and_fc_chain_flag(tmp_path):
+    import subprocess
+    import sys
+    import tensorflow as tf
+    import torch
+    from torch import nn
+    from pfkit.adapters import to_keras
+    from pfkit.inspect import inspect_model
+
+    model = nn.Sequential(nn.Linear(4, 3), nn.ReLU(), nn.Linear(3, 2))
+    sample = np.random.default_rng(4).normal(size=(1, 4)).astype(np.float32)
+    for form, expected_op in (("conv1x1", "CONV_2D"), ("fc", "FULLY_CONNECTED")):
+        keras = to_keras(model, (1, 4), "mlp", form=form)
+        if form == "conv1x1":
+            kernels = [layer.get_weights()[0] for layer in keras.layers if isinstance(layer, tf.keras.layers.Conv2D)]
+            assert np.array_equal(kernels[0], model[0].weight.detach().numpy().T.reshape(1, 1, 4, 3))
+            assert np.array_equal(kernels[1], model[2].weight.detach().numpy().T.reshape(1, 1, 3, 2))
+        converter = tf.lite.TFLiteConverter.from_keras_model(keras)
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.representative_dataset = lambda: iter([[sample.reshape(1, 1, 1, 4) if form == "conv1x1" else sample]])
+        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+        converter.inference_input_type = tf.int8
+        converter.inference_output_type = tf.int8
+        path = tmp_path / f"{form}.tflite"
+        path.write_bytes(converter.convert())
+        result = inspect_model(path)
+        ops = [item["operator"] for item in result["operators"]]
+        assert expected_op in ops
+        if form == "conv1x1":
+            assert set(ops) <= {"CONV_2D", "RESHAPE"}
+            assert len([op for op in ops if op == "CONV_2D"]) == 2
+            assert not result["blocking_flags"]
+        else:
+            assert any(flag.startswith("fc_chain_fused_activation") for flag in result["flags"])
+            blocked = subprocess.run([sys.executable, "-m", "pfkit", "inspect", str(path)],
+                                     text=True, capture_output=True)
+            allowed = subprocess.run([sys.executable, "-m", "pfkit", "inspect", str(path), "--allow-fc-chain"],
+                                     text=True, capture_output=True)
+            assert blocked.returncode == 1
+            assert allowed.returncode == 0, allowed.stderr
+        interpreter = tf.lite.Interpreter(model_path=str(path))
+        interpreter.allocate_tensors()
+        assert interpreter.get_input_details()[0]["dtype"] == np.int8
+        assert interpreter.get_output_details()[0]["dtype"] == np.int8
+        if form == "conv1x1":
+            assert tuple(interpreter.get_input_details()[0]["shape"]) == (1, 1, 1, 4)
+            assert tuple(interpreter.get_output_details()[0]["shape"]) == (1, 2)
+
+
+def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
+    import importlib.util
+    import sys
+    import types
+
+    model_shape = [(1, 4, 1, 1)]
+    class FakeModel:
+        num_inputs = num_outputs = 1
+        input_dtypes = [np.dtype("int8")]
+        output_shape = [(1, 4)]
+        input_scale_factor = output_scale_factor = [1.0]
+        input_zeropoint = output_zeropoint = [0]
+        def __init__(self, blob):
+            self.input_shape = model_shape
+        def run(self, values):
+            return values
+    package = types.ModuleType("vbx")
+    sim = types.ModuleType("vbx.sim")
+    sim.Model = FakeModel
+    package.sim = sim
+    monkeypatch.setitem(sys.modules, "vbx", package)
+    monkeypatch.setitem(sys.modules, "vbx.sim", sim)
+    path = Path(__file__).resolve().parents[1] / "pfkit" / "remote" / "vbx_sim_run.py"
+    spec = importlib.util.spec_from_file_location("test_vbx_sim_run", path)
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    model_path = tmp_path / "model.vnnx"
+    model_path.write_bytes(b"model")
+    for shape, values, expected in (
+        ((1, 4, 1, 1), [[1, 2, 3, 4]], [[1, 2, 3, 4]]),
+        ((1, 2, 1, 2), [[[[1, 2], [3, 4]]]], [[1, 3, 2, 4]]),
+    ):
+        model_shape[0] = shape
+        input_path = tmp_path / "input.npy"
+        output_path = tmp_path / "output.npz"
+        np.save(input_path, np.asarray(values, dtype=np.int8))
+        monkeypatch.setattr(sys, "argv", ["vbx_sim_run", "--model", str(model_path),
+                                      "--input", str(input_path), "--output", str(output_path)])
+        runner.main()
+        with np.load(output_path) as result:
+            assert result["outputs"].tolist() == expected
+
+
 @pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp"])
 def test_examples_through_inspect(name, tmp_path):
     import tensorflow as tf
@@ -99,6 +191,8 @@ def test_examples_through_inspect(name, tmp_path):
     assert interpreter.get_input_details()[0]["dtype"] == np.int8
     assert interpreter.get_output_details()[0]["dtype"] == np.int8
     assert len(manifest["sha256"]) == 64
+    assert manifest["export_form"] == "conv1x1"
+    assert set(op["operator"] for op in result["operators"]) <= {"CONV_2D", "RESHAPE"}
 
 
 def test_cli_remote_dry_runs(tmp_path):

@@ -15,11 +15,13 @@ def _fail(name, obj):
     raise UnsupportedModelError(f"Unsupported model node {name}: {obj}; supported: {SUPPORTED}")
 
 
-def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str):
+def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str, form: str = "conv1x1"):
     """Return an equivalent fixed-batch Keras model for the restricted graph."""
     import tensorflow as tf
     if adapter not in ("mlp", "conv2d_1k"):
         _fail("adapter", adapter)
+    if form not in ("conv1x1", "fc"):
+        _fail("form", form)
     class AdapterTracer(Tracer):
         def is_leaf_module(self, module, qualified_name):
             if isinstance(module, (nn.Linear, nn.Conv2d, FakeQuantizeBase)):
@@ -38,6 +40,8 @@ def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str):
         _fail("input", input_shape)
     if conv:
         inputs = tf.keras.Input(batch_size=1, shape=(input_shape[2], input_shape[3], input_shape[1]))
+    elif form == "conv1x1":
+        inputs = tf.keras.Input(batch_size=1, shape=(1, 1, int(np.prod(input_shape[1:]))))
     else:
         inputs = tf.keras.Input(batch_size=1, shape=input_shape[1:])
     x = inputs
@@ -61,9 +65,13 @@ def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str):
             elif isinstance(module, nn.Linear):
                 if conv and not seen_linear and len(x.shape) > 2:
                     _fail(node.target, "Linear needs explicit Flatten")
-                layer = tf.keras.layers.Dense(module.out_features, use_bias=module.bias is not None)
+                if not conv and form == "conv1x1":
+                    layer = tf.keras.layers.Conv2D(module.out_features, (1, 1), use_bias=module.bias is not None)
+                    weights = [module.weight.detach().numpy().T.reshape(1, 1, module.in_features, module.out_features)]
+                else:
+                    layer = tf.keras.layers.Dense(module.out_features, use_bias=module.bias is not None)
+                    weights = [module.weight.detach().numpy().T]
                 x = layer(x)
-                weights = [module.weight.detach().numpy().T]
                 if module.bias is not None:
                     weights.append(module.bias.detach().numpy())
                 layer.set_weights(weights)
@@ -73,6 +81,8 @@ def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str):
             elif isinstance(module, nn.Flatten):
                 if module.start_dim != 1 or module.end_dim != -1:
                     _fail(node.target, module)
+                if not conv and form == "conv1x1":
+                    continue
                 if conv and len(x.shape) == 4:
                     x = tf.keras.layers.Permute((3, 1, 2))(x)
                 x = tf.keras.layers.Flatten()(x)
@@ -91,12 +101,16 @@ def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str):
             else:
                 _fail(node.target, type(module).__name__)
         elif node.op == "call_method" and node.target == "flatten" and node.args[1:] in ((1,), (1, -1)):
+            if not conv and form == "conv1x1":
+                continue
             if conv and len(x.shape) == 4:
                 x = tf.keras.layers.Permute((3, 1, 2))(x)
             x = tf.keras.layers.Flatten()(x)
         elif node.op == "call_function" and node.target in (torch.relu, torch.nn.functional.relu):
             x = tf.keras.layers.ReLU()(x)
         elif node.op == "call_function" and node.target == torch.flatten and node.args[1:] in ((1,), (1, -1)):
+            if not conv and form == "conv1x1":
+                continue
             if conv and len(x.shape) == 4:
                 x = tf.keras.layers.Permute((3, 1, 2))(x)
             x = tf.keras.layers.Flatten()(x)
@@ -104,6 +118,10 @@ def to_keras(model: nn.Module, input_shape: tuple[int, ...], adapter: str):
             _fail(node.name, f"{node.op} {node.target}")
     if conv and len(x.shape) == 4:
         x = tf.keras.layers.Permute((3, 1, 2))(x)
+    if not conv and form == "conv1x1":
+        x = tf.keras.layers.Flatten()(x)
+    if not conv and len(input_shape) != 2:
+        _fail("input", f"flat vector required: {input_shape}")
     return tf.keras.Model(inputs, x)
 
 
@@ -121,6 +139,8 @@ def verify_transliteration(model, keras_model, sample, adapter, atol=1e-5):
     actual_input = np.asarray(sample, dtype=np.float32)
     if adapter == "conv2d_1k":
         actual_input = actual_input.transpose(0, 2, 3, 1)
+    elif adapter == "mlp" and len(keras_model.input_shape) == 4:
+        actual_input = actual_input.reshape(1, 1, 1, -1)
     actual = keras_model(actual_input, training=False).numpy()
     if expected.shape != actual.shape or not np.allclose(expected, actual, atol=atol, rtol=atol):
         raise ValueError(f"Torch/Keras mismatch: {expected.shape}, {actual.shape}, max delta {np.max(np.abs(expected-actual))}")
