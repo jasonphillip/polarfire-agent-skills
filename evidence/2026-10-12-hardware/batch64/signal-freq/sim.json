@@ -1,0 +1,34 @@
+{
+  "commands": [
+    {
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work'",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp reports/20261012-180306-signal-freq-batch64/model.vnnx reports/20261012-180306-signal-freq-batch64/input.int8.npy <kit-root>/pfkit/remote/vbx_sim_run.py <tools-host>:pfkit-work/",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source ~/vbx-env/bin/activate && python <tools-host-home>/pfkit-work/vbx_sim_run.py --model <tools-host-home>/pfkit-work/model.vnnx --input <tools-host-home>/pfkit-work/input.int8.npy --output <tools-host-home>/pfkit-work/sim.npz'\"'\"''",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp <tools-host>:pfkit-work/sim.npz reports/20261012-180306-signal-freq-batch64/sim.npz",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "output": {
+    "path": "reports/20261012-180306-signal-freq-batch64/sim.npz",
+    "sha256": "dfcfeaf0ee349cf31a2d4adf911feaf916b4336e37be30a4ce9bb0005985ac2f",
+    "size_bytes": 1103
+  },
+  "status": "completed"
+}

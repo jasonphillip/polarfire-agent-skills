@@ -1,0 +1,18 @@
+{
+  "float_vs_tflite": {
+    "max_abs": 1.6712875366210938,
+    "pass": true,
+    "tolerance": 5.0
+  },
+  "pass": true,
+  "sim_vs_hw": {
+    "max_abs_lsb": 0,
+    "pass": true,
+    "tolerance_lsb": 0
+  },
+  "tflite_vs_sim": {
+    "max_abs_lsb": 0,
+    "pass": true,
+    "tolerance_lsb": 1
+  }
+}

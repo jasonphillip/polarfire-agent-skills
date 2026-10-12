@@ -1,0 +1,40 @@
+{
+  "commands": [
+    {
+      "command": "ssh root@<kit> 'mkdir -p /tmp/pfkit'",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp hw/vbx_run reports/20261012-180306-signal-freq-batch64/model.vnnx reports/20261012-180306-signal-freq-batch64/input.int8.bin root@<kit>:/tmp/pfkit/",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "ssh root@<kit> '/tmp/pfkit/vbx_run --model /tmp/pfkit/model.vnnx --input /tmp/pfkit/input.int8.bin --output /tmp/pfkit/hw.bin --timeout-ms 5000 --json /tmp/pfkit/hw.json'",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp root@<kit>:/tmp/pfkit/hw.bin reports/20261012-180306-signal-freq-batch64/hw.bin",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp root@<kit>:/tmp/pfkit/hw.json reports/20261012-180306-signal-freq-batch64/hw.json",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "output": {
+    "path": "reports/20261012-180306-signal-freq-batch64/hw.bin",
+    "sha256": "f3e1261b53f12fd8016237e18dd15164b6c6ea250c4367f635d96914492ad40d",
+    "size_bytes": 64
+  },
+  "status": "completed"
+}
