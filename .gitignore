@@ -12,3 +12,6 @@ reports/*/outputs/
 reports/
 probes/out/
 *.egg-info/
+hw/vbx_run
+hw/vbx_run.*
+hw/*.o

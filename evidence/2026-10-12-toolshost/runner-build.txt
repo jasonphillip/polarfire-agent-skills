@@ -1,0 +1,6 @@
+runner cross-build on the tools host, 2026-10-12
+toolchain: riscv64-unknown-linux-gnu-gcc (GCC) 10.2.0 from SmartHLS 2025.2 swtools; make absent on the MSYS PATH, mingw32-make.exe exists under SmartHLS dependencies/mingw64/bin; built with the direct gcc line from hw/Makefile
+flags: -O2 -std=c11 -Wall -Wextra -DVBX_SOC_DRIVER -DMSS_DDR -DUSE_INTERRUPTS=0 -I<sdk>/drivers/vectorblox, SDK release-v2.0.3
+result: exit 0; warnings only in the SDK driver sources (enum-conversion, signedness); hw/vbx_run.c clean
+artifact: vbx_run.riscv64 24144 bytes sha256 02cbb09b52045d326fdc9c230d09f4ab0db7b0d4930715c577cc9cfa3f27c4bb
+ELF 64-bit LSB executable, UCB RISC-V, RVC, double-float ABI, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-riscv64-lp64d.so.1, for GNU/Linux 4.15.0, not stripped

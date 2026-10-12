@@ -1,0 +1,62 @@
+==C2==
+pack: exit=1; vnnx=no
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+Traceback (most recent call last):
+  File "<sdk-venv>/bin/vnnx_compile", line 6, in <module>
+    sys.exit(main())
+  File "<sdk>/python/vbx/vbx/generate/lite_flow.py", line 155, in main
+    tflite_to_vnnx(optimized_tflite, #args.tflite
+  File "<sdk>/python/vbx/vbx/generate/lite_flow.py", line 88, in tflite_to_vnnx
+    vnnx_graph_binary = generate_vnnx_from_json_subgraphs(json_graph, size_config, inputs, outputs, include_io_data, tmp_dir, engine_graphs_nx)
+  File "<sdk>/python/vbx/vbx/generate/vnnx_tflite.py", line 1095, in generate_vnnx_from_json_subgraphs
+    Nodes = populate_nodes(json_subgraphs, preset, graph_activations, weights, aliased_ids, ids_with_dummies, tmp_dir,\
+  File "<sdk>/python/vbx/vbx/generate/vnnx_tflite.py", line 3083, in populate_nodes
+    assert(check_pack(i_tensor['shape'], o_tensor['shape'], opts['axis'], node.PackOptions.axis, node.PackOptions.count))
+AssertionError
+strided_slice: exit=1; vnnx=no
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+Traceback (most recent call last):
+  File "<sdk-venv>/bin/vnnx_compile", line 6, in <module>
+    sys.exit(main())
+  File "<sdk>/python/vbx/vbx/generate/lite_flow.py", line 155, in main
+    tflite_to_vnnx(optimized_tflite, #args.tflite
+  File "<sdk>/python/vbx/vbx/generate/lite_flow.py", line 88, in tflite_to_vnnx
+    vnnx_graph_binary = generate_vnnx_from_json_subgraphs(json_graph, size_config, inputs, outputs, include_io_data, tmp_dir, engine_graphs_nx)
+  File "<sdk>/python/vbx/vbx/generate/vnnx_tflite.py", line 1115, in generate_vnnx_from_json_subgraphs
+    set_skip_channel_slice(Nodes, test_inputs, test_outputs, external_inputs)
+  File "<sdk>/python/vbx/vbx/generate/vnnx_tflite.py", line 1358, in set_skip_channel_slice
+    channel_matches = sn.tensor_array[0].shape[-3] == sn.tensor_array[-1].shape[-3]
+IndexError: tuple index out of range
+shape: exit=1; vnnx=no
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+####################[0m
+[31mSome layers have parameters/arguments that we do not currently support.[0m
+For futher assistance, please send the layer(s) to the vectorblox team at:
+[31mvectorblox@microchip.com[0m
+
+Error unsupported ops:	 SHAPE at location 0 is not currently supported.
+
+	 STRIDED_SLICE at location 1, [31m Input data type=INT32 [0m is not currently supported.
+		-->Supported values are = ['INT8', 'UINT8']
+
+	 QUANTIZE at location 3, [31m Input data type=FLOAT32 [0m is not currently supported.
+		-->Supported values are = ['INT8', 'UINT8']
+
+
+==C6==
+per_channel: compile_exit=0; vnnx=yes
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+max_raw_int8_difference=0
+tflite_raw=[8, 17, -40, -8, -27, 48, 13, 36, -45, -13, -45, 56, 18, 55, -58, -18, -64, 66]
+vnnx_raw=[8, 17, -40, -8, -27, 48, 13, 36, -45, -13, -45, 56, 18, 55, -58, -18, -64, 66]
+per_channel: simulator_exit=0
+per_tensor: compile_exit=0; vnnx=yes
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+max_raw_int8_difference=0
+tflite_raw=[8, 17, -40, -8, -27, 48, 13, 36, -45, -13, -45, 56, 19, 55, -58, -18, -64, 66]
+vnnx_raw=[8, 17, -40, -8, -27, 48, 13, 36, -45, -13, -45, 56, 19, 55, -58, -18, -64, 66]
+per_tensor: simulator_exit=0
+exit=0
