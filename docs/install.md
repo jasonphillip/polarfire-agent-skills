@@ -27,6 +27,8 @@ The repository is public (since 2026-10-12). Install it from the marketplace:
 /plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills
 ```
 
+Tested on 2026-10-12 night from the command line (`claude plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills`, Claude Code 2.1.296): the marketplace was added, the plugin installed at user scope as version 2026.10.0, then uninstalled again.
+
 For a local clone, start Claude Code with the plugin directory:
 
 ```sh
