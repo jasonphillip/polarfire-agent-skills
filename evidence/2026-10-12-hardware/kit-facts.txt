@@ -1,0 +1,13 @@
+hostname: mpfs-icicle-kit
+kernel: 6.18.17-linux4microchip-2026.04.1-g7fbe4f69684d
+sh: line 1: warning: command substitution: ignored null byte in input
+model: Microchip PolarFire-SoC Icicle Kit
+uio0 fpga_lsram 0x0000000060000000
+uio1 dma-controller@60010000 0x0000000060010000
+uio2 vbx@60030000 0x0000000060030000
+uio3 pid@60001000 0x0000000060001000
+/dev/udmabuf-ddr-c0
+/dev/udmabuf-ddr-nc-wcb0
+/dev/udmabuf-ddr-nc0
+overlays: seed7
+runner sha256: fe9fbdc96d14c64120eaaf59a9b73dd82ab85563119d86b4ab96fb6b11d9d182

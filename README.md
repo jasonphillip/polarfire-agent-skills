@@ -22,7 +22,7 @@ Each stage writes evidence in its run directory.
 
 Validated: see `docs/validation.md` and `evidence/2026-10-12-toolshost/`,
 `evidence/2026-10-12-sim-runs/`, and `evidence/2026-10-12-clean-checkout/`.
-Not yet: hardware inference and simulator-to-hardware comparison.
+Hardware: both examples ran on one Icicle Kit on 2026-10-12 with 0 LSB simulator-to-hardware difference (`evidence/2026-10-12-hardware/`). Not yet: a bitstream built by this kit's own build script.
 
 Read `docs/scope.md` for the supported profile.
 Read `docs/pipeline.md` for commands and outputs.
