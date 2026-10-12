@@ -1,6 +1,6 @@
 ---
 name: kit-program
-description: Read device identity and program an approved MPFS250T image.
+description: Check device identity and program an approved MPFS250T image.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
@@ -9,60 +9,55 @@ metadata:
 
 # Kit identity and programming
 
-Read the raw IDCODE before selecting a programming job.
-The SmartDebug script binds a specific programmer and device candidates.
-Edit a local copy for the attached kit, then inspect its log.
+Read `docs/hardware.md` before changing the kit.
+The model inference path needs a V250-enabled image.
+The current kit build script creates a job but does not program the device.
+Programming changes persistent hardware state.
+Get operator approval for the exact image and target before programming.
 
-Source: `workers/polarfire-hybrid-control/libero/scripts/read_idcode.tcl`
+## Identity
 
-This invocation replaces source-specific executable and log paths with `<path>`.
+Read the raw device IDCODE and selected programmer.
+Match both to the intended MPFS250T kit.
+Record the currently loaded image identity.
+Keep the previous programming job and its hash.
+Write the exact rollback action into the run record.
+Stop if identity or image provenance is unclear.
 
-```bash
-<path>/sdbg.exe SCRIPT:"<path>/libero/scripts/read_idcode.tcl" LOGFILE:"<path>/sdbg_idcode.log"
-```
-Source: `workers/polarfire-hybrid-control/libero/scripts/read_idcode.tcl`
+## Programming
 
-The Libero alternative opens a fixed project before reading IDCODE.
-Replace its project path in a local copy if you use it.
+Review the candidate job and generated core configuration.
+Confirm CoreVectorBlox 2.0.1 with V250 in the generated IP.
+Read the timing and resource reports for that job.
+Program only the reviewed job.
+Save the complete FlashPro log and job hash.
+Stop on any programming error.
+Keep the rollback job available.
 
-Source: `workers/polarfire-hybrid-control/libero/scripts/read_idcode_libero.tcl`
+The case study includes SmartDebug and FlashPro Tcl examples.
+They bind local programmer and project paths.
+Adapt a local copy only after checking those bindings.
 
-Before programming, record the hash of the job being replaced.
-Record the exact rollback command and preserve the rollback job.
-The source applied this habit before each persistent programming change.
+## Linux image
 
-Source: `workers/polarfire-hybrid-control/README.md`
+The SD-card image step is separate from FPGA programming.
+Decompress the selected `.wic.gz` before writing its `.wic`.
+Check the destination device before the write.
+Boot and inspect HSS, U-Boot, and Linux output.
+Check the V250 UIO node and uncached DMA device.
+Use `docs/hardware.md` for the overlay and runner path.
+Do not infer the bitstream from a booted Linux image.
 
-Review the new job, device identity, and selected PROGRAM action.
-Get operator approval for the exact image before changing the kit.
-Adapt the source script's fixed job path in a local copy.
+## Evidence
 
-Source: `workers/polarfire-hybrid-control/libero/scripts/program_kit.tcl`
-
-This invocation replaces source-specific executable and log paths with `<path>`.
-
-```bash
-<path>/fpexpress.exe SCRIPT:"<path>/libero/scripts/program_kit.tcl" LOGFILE:"<path>/program.log"
-```
-Source: `workers/polarfire-hybrid-control/libero/scripts/program_kit.tcl`
-
-Stop on any programming failure. Keep the full log for review.
-
-Source: `workers/polarfire-hybrid-control/libero/scripts/program_kit.tcl`
-
-The SD-card image step is manual. Decompress the `.wic.gz` with `gunzip` first.
-Then write the resulting `.wic` with `dd` or USBImager.
-Check the destination device twice before writing.
-
-Source: `workers/polarfire-hybrid-control/firmware/linux/README.md`
-
-Boot the kit from SD and inspect HSS, U-Boot, and Linux output.
-
-Source: `docs/model-to-v250.md`
+Keep the IDCODE, job hash, tool output, and boot log together.
+Name the image and board beside any inference result.
+Use `claim-log` to cite each raw output file.
+A programming pass does not prove model inference.
 
 ## Checks
 
-- Read the raw IDCODE and connected programmer from the SmartDebug output.
-- Read the replaced job hash and exact rollback command from the run record.
+- Read device IDCODE and programmer from the identity output.
+- Read the approved job hash and rollback action from the run record.
 - Read PROGRAM success and job identity from the FlashPro log.
-- Read the boot stages from the serial console after the manual SD-card step.
+- Read boot stages and device nodes from kit output.

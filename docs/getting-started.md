@@ -1,20 +1,34 @@
 # Getting started
 
-1. Install this local clone as a plugin in your agent client. Load `polarfire-bringup` or a named skill.
-2. Confirm the tools host has Libero SoC, SmartHLS, and VectorBlox SDK v2.0.3. Confirm the design uses CoreVectorBlox IP v2.0.1.
-3. Use a local checkout of the worked source repository. Read its current scripts before running any source command.
-4. Check the model graph and TFLite operator list. Use a fixed input shape and INT8 input and output.
-5. Compile the TFLite on the tools host. Save byte size, SHA-256, SDK version, and compiler output.
-6. Run the SmartHLS testbench. Build and audit the Libero reports. Keep the exact reports.
-7. Read the kit IDCODE. Review the job and rollback image before programming.
-8. Run the inference smoke on kit Linux. Match its model, image, DMA pool, and input layout.
-9. Run the control loop with replayed input. Save output and watchdog status to a report file.
-10. Create a demonstrated-state table. Link each row to its raw report.
+Read `docs/install.md` for client setup and tested installation claims.
+Read `docs/scope.md` for the supported board and software profile.
+Read `docs/contracts.md` and `docs/adapters.md` before adding a model.
+Read `docs/pipeline.md` for stage outputs and remote configuration.
+Read `docs/hardware.md` before any tools host or kit step.
+Read `docs/claims.md` before making an operator or quantization claim.
 
-A programming step changes persistent hardware state. Get operator approval for the exact image first. Stop on a failed check. Do not infer a measured result from an earlier report or from a different board.
+## First local run
 
-The source commands assume a checkout of the source repository. The skill files name their source directly below each command. Replace model filenames only after checking the target script's inputs.
+Set `KIT_ROOT` to the absolute checkout path.
+Create the Python environment.
+Use a new run directory for the local inspect path.
 
-Tutorial: https://github.com/jasonphillip/tychon-quantum-sensing/blob/main/docs/model-to-v250.md
+```sh
+KIT_ROOT=/absolute/path/to/polarfire-agent-skills
+make -C "$KIT_ROOT" env
+"$KIT_ROOT/.venv/bin/python" -m pfkit example run signal-freq --until inspect --run-dir "$KIT_ROOT/reports/signal-inspect"
+```
 
-Local source: `docs/model-to-v250.md` in the source checkout.
+Check `dataset.manifest.json`, `training.json`, `eval.json`, and `export.manifest.json`.
+Check `inspect.json` for empty unsupported and limit violation lists.
+Check `commands.jsonl` for the run command and exit code.
+Do not report an unrun remote stage as a pass.
+
+## Later stages
+
+Configure `toolshost.yaml` before compile or sim.
+Build `hw/vbx_run` and configure `kit.yaml` before infer.
+Use `polarfire-bringup` for the acceptance table and stage choices.
+Use the individual pfkit commands in the skills to continue one run directory.
+A fresh `example run` starts again at data.
+Keep its generated report files with the model and input identity.

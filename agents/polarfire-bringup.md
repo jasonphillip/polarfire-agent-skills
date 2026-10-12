@@ -1,6 +1,6 @@
 ---
 name: polarfire-bringup
-description: Guide model export, fabric build, kit inference, and evidence checks for PolarFire V250 bring-up.
+description: Run a pfkit example from data through selected V250 gates and cite each result.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
@@ -12,33 +12,72 @@ tools:
   - Glob
   - Bash
 skills:
-  - vbx-ops-guard
-  - vbx-export-int8
-  - vbx-compile
-  - smarthls-fixed-point
-  - libero-build
+  - adapt-your-model
+  - claim-log
+  - dataset-and-training
+  - fabric-watchdog-fallback
+  - hls4ml-libero-route
   - kit-program
   - kit-run-inference
-  - fabric-watchdog-fallback
-  - claim-log
-  - hls4ml-libero-route
+  - libero-build
+  - smarthls-fixed-point
+  - vbx-compile
+  - vbx-export-int8
+  - vbx-ops-guard
 ---
 
-# PolarFire bring-up agent
+# PolarFire bring-up
 
-Given a model, its representative input, a source checkout, and an approved kit image, run these skills in order. Stop at the first failed acceptance check. Save the command output and exact report path at each step. Never write a measurement that was not read from tool output.
+Accept either an example name or a user model.
+For a user model, first create a valid example contract and module.
+Use `dataset-and-training` and `adapt-your-model` for that adaptation.
+Read `docs/contracts.md`, `docs/adapters.md`, and `docs/claims.md`.
+Keep one model, one mode, and one run directory per run.
+Run from the kit root with its Python 3.11 environment.
 
-A step that needs the tools host or kit runs over SSH to a host the user names. Never assume a hostname.
+## Staged command
 
-| Step | Skill | Acceptance check |
+Set `KIT_ROOT` to the absolute kit checkout path.
+Set `EXAMPLE` to the example name.
+Choose one final stage and a new `RUN_DIR`.
+The command runs every prior stage in order.
+
+```sh
+KIT_ROOT=/absolute/path/to/polarfire-agent-skills
+EXAMPLE=signal-freq
+RUN_DIR="$KIT_ROOT/reports/signal-inspect"
+"$KIT_ROOT/.venv/bin/python" -m pfkit example run "$EXAMPLE" --until inspect --run-dir "$RUN_DIR"
+```
+
+Choose `--until data`, `train`, `eval`, `export`, or `inspect` for local work.
+Choose `--until compile`, `sim`, `infer`, or `compare` for remote work.
+A second `example run` starts again at data.
+Use a new run directory when changing the final stage or `--full` mode.
+Use individual pfkit commands only when their input files are already prepared.
+
+## Gates
+
+Inspect must pass before compile.
+Compile and sim need a configured `toolshost.yaml` and available tools host.
+Infer needs a configured `kit.yaml`, compatible kit image, and built `hw/vbx_run`.
+Read the generated IP version and V250 preset before programming any image.
+Do not run optional control and programming work as part of model inference.
+Stop at a failed gate and keep its output.
+
+| Stage | Acceptance file | Required result |
 |---|---|---|
-| 1 | `vbx-ops-guard` | Graph has no disallowed or unknown operations. Exported TFLite has no banned operations. |
-| 2 | `vbx-export-int8` | Export exists. Input and output are INT8. Static shape and calibration match the model. |
-| 3 | `vbx-compile` | Compiler exits successfully. Artifact byte size and SHA-256 are recorded. |
-| 4 | `smarthls-fixed-point` | Software testbench passes. Fixed-point behavior meets the stated bounds. |
-| 5 | `libero-build` | Closure reports exist. Strict report audit passes. |
-| 6 | `kit-program` | IDCODE matches the approved job. Operator approved this image. Programming log reports success. |
-| 7 | `kit-run-inference` | Kit reports V250 completion without an error. Input and output metadata match the model. |
-| 8 | `claim-log` | Every result row links to a raw report file and states its evidence class. |
+| data | `RUN_DIR/dataset.manifest.json` | Arrays meet the contract. |
+| train | `RUN_DIR/training.json` | Checkpoint hash and epochs recorded. |
+| eval | `RUN_DIR/eval.json` | Test error and units recorded. |
+| export | `RUN_DIR/export.manifest.json` | INT8 model and calibration recorded. |
+| inspect | `RUN_DIR/inspect.json` | Unsupported and limit lists empty. |
+| compile | `RUN_DIR/compile.json` | Remote command passed and VNNX recorded. |
+| sim | `RUN_DIR/sim.json` | Simulator output recorded. |
+| infer | `RUN_DIR/infer.json` and `RUN_DIR/hw.json` | Kit output and runner metadata recorded. |
+| compare | `RUN_DIR/compare.json` | All supplied comparisons pass stated bounds. |
 
-Use `fabric-watchdog-fallback` after the bring-up sequence to test the control safety path. Keep the raw observer and actuator logs. Treat a timeout bit alone as evidence of a trip, not evidence of fallback.
+Use `claim-log` to summarize the run.
+Never write a number not read from tool output.
+Every result row cites the exact run directory file that supports it.
+Label every unrun stage `not run`.
+Keep case study results separate from this kit's results.

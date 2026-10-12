@@ -1,49 +1,55 @@
 ---
 name: vbx-compile
-description: Compile INT8 TFLite for CoreVectorBlox V250 and record artifact identity.
+description: Route V250 compilation to the pfkit tools host stage.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
   version: 2026.10.0
 ---
 
-# Compile for V250
+# V250 compile entry
 
-Run on the tools host with VectorBlox SDK v2.0.3 and CoreVectorBlox IP v2.0.1. Use the TFLite produced by the export check.
+Use `kit-run-inference` for the canonical compile and simulator commands.
+This skill keeps the earlier compile name available.
+It does not call the compiler through a second path.
 
-```bash
-vnnx_compile -c V250 -t <model>_integer_quant.tflite -o <model>.vnnx
-```
-Source: `workers/polarfire-hybrid-control/models/README.md`
+## Inputs
 
-The placeholders replace model names in the source command. Record SDK version, input hash, output byte size, and output SHA-256 in a report beside the artifact.
+Name the example and its run directory.
+Read `model.tflite`, `export.manifest.json`, and `inspect.json`.
+The inspect result must have empty failure lists.
+Read `toolshost.yaml` and confirm the tools host configuration.
+The tools host needs the pinned SDK environment.
+The target for this kit is V250.
+Read `docs/scope.md` for the tested SDK and IP pairing.
 
-```bash
-sha256sum models/fcnn_v2_residual_dataset_a.vnnx
-```
-Source: `workers/polarfire-hybrid-control/models/README.md`
+## Execution
 
-The hash command is the worked-example form; replace the model filename for a new model. Stop on nonzero exit or `VECTORBLOX ERROR` in stderr.
+Follow `kit-run-inference` at its compile stage.
+It calls the pfkit remote plan and writes `model.vnnx`.
+Use a dry run first when reviewing SSH and file paths.
+A dry run records `status: not run` in `compile.json`.
+It does not prove that the compiler accepted the model.
+After an actual run, inspect the command records and artifact hash.
+Stop on any nonzero exit or compiler error.
 
-Source: `workers/odmr-edge-ml/src/odmr_edge_ml/validation/tflite_ops.py`
+## Evidence
 
-Read the installed SDK version before compiling. The tutorial pairs SDK v2.0.3 with CoreVectorBlox IP v2.0.1.
+Keep the TFLite input hash with the VNNX output hash.
+Keep the SDK version with the compile record.
+Do not compare hashes across different input models.
+Do not infer simulator or kit behavior from a compile result.
+Use the simulator stage before reporting output agreement.
+Use hardware output before reporting kit behavior.
 
-```bash
-pip show vbx
-```
-Source: `docs/model-to-v250.md`
-
-Keep the input TFLite hash with the output hash. Compare byte size and hash only for the same input and SDK.
-
-Source: `workers/polarfire-hybrid-control/models/README.md`
-
-Treat successful compilation as an artifact check. Run a separate simulator or kit check for behavior.
-
-Source: `docs/model-to-v250.md`
+The case study describes compiler flags for its own model.
+The kit's current compile command is owned by pfkit.
+Do not copy model-specific flags or filenames from the case study.
+See `docs/pipeline.md` for the current remote command contract.
 
 ## Checks
 
-- Read SDK version 2.0.3 from the package output.
-- Read successful compiler exit and no `VECTORBLOX ERROR` from its output.
-- Read the artifact byte size and SHA-256 from file tool output.
+- Read an inspect pass from `inspect.json` before compiling.
+- Read command exit codes and status from `compile.json`.
+- Read the VNNX output size and hash from the run directory record.
+- Read SDK version from the tools host output before naming a pairing.

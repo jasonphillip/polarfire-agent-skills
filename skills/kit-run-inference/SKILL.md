@@ -1,6 +1,6 @@
 ---
 name: kit-run-inference
-description: Run and log V250 inference through Linux UIO and uncached DMA.
+description: Compile, simulate, and run a pfkit model on the V250 kit.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
@@ -9,78 +9,58 @@ metadata:
 
 # Run inference on the kit
 
-Run kit commands over SSH to the user-named kit host. Match the loaded model, overlay, and bitstream before inference.
+Start only after `inspect.json` has empty unsupported and limit violation lists.
+Read `docs/pipeline.md` and `docs/hardware.md`.
+Use one run directory for all stages of one model.
+Configure `toolshost.yaml` for compile and sim.
+Configure `kit.yaml` and build `hw/vbx_run` before infer.
+The kit image needs the V250 overlay and uncached DMA pool.
+Check the UIO name `vbx` and the DMA device before infer.
+The runner receives already quantized input bytes.
 
-Source: `docs/model-to-v250.md`
+## Remote stages
 
-Use the two-slot overlay with the two-slot image. Apply it every boot; runtime overlays do not persist.
+Use the kit environment from the repository root.
+The first two commands need the tools host.
+The third command needs the configured kit and built runner.
 
-```bash
-dtc -@ -O dtb -o two_slot_vbx_pid.dtbo two_slot_vbx_pid.dtso \
-    -Wno-reg_format -Wno-avoid_default_addr_size
-mkdir -p /sys/kernel/config/device-tree/overlays/two_slot
-cat two_slot_vbx_pid.dtbo > /sys/kernel/config/device-tree/overlays/two_slot/dtbo
+```sh
+KIT_ROOT=/absolute/path/to/polarfire-agent-skills
+"$KIT_ROOT/.venv/bin/python" -m pfkit compile "$KIT_ROOT/reports/signal-local/model.tflite" --output "$KIT_ROOT/reports/signal-local/model.vnnx" --run-dir "$KIT_ROOT/reports/signal-local"
+"$KIT_ROOT/.venv/bin/python" -m pfkit sim "$KIT_ROOT/reports/signal-local/model.vnnx" --input "$KIT_ROOT/reports/signal-local/input.int8.npy" --output "$KIT_ROOT/reports/signal-local/sim.npz" --run-dir "$KIT_ROOT/reports/signal-local"
+"$KIT_ROOT/.venv/bin/python" -m pfkit infer "$KIT_ROOT/reports/signal-local/model.vnnx" --input "$KIT_ROOT/reports/signal-local/input.int8.bin" --output "$KIT_ROOT/reports/signal-local/hw.bin" --json "$KIT_ROOT/reports/signal-local/hw.json" --run-dir "$KIT_ROOT/reports/signal-local"
 ```
-Source: `workers/polarfire-hybrid-control/firmware/linux/two_slot_vbx_pid.dtso`
 
-Check that `generic-uio` exposes a node named `vbx`. Check the uncached DMA device too.
+The `example run` path prepares both quantized input files before sim.
+For manual stages, prepare `input.int8.npy` and `input.int8.bin` from the inspected TFLite input scale and zero point.
+Keep the fixed batch and input layout from the example contract.
+The binary file must contain the model's exact input byte count.
+Use `--dry-run` to review each remote command before execution.
+A dry run is a plan, not a successful remote stage.
 
-```bash
-ls -l /dev/uio*
-cat /sys/class/uio/uio*/name
-ls /dev/udmabuf-ddr-nc0
-```
-Source: `docs/model-to-v250.md`
+## Comparison
 
-The DMA pool uses `/dev/udmabuf-ddr-nc0`. The base device tree must reserve its memory at boot.
+Follow `adapt-your-model` for the canonical compare and report commands.
+Pass the simulator archive and hardware output to compare when present.
+The example contract sets float and TFLite-to-simulator tolerances.
+Hardware equality is exact by default.
+Use `--lsb-tolerance` only when the run states the changed bound.
+A missing simulator or hardware file leaves that comparison `not run`.
+Stop when a comparison reports a failed bound.
 
-Source: `workers/polarfire-hybrid-control/firmware/linux/README.md`
+## Evidence
 
-Run the bounded `vbx_probe` before the smoke helper. Its output shows control, error, and version registers.
-
-Source: `workers/polarfire-hybrid-control/firmware/linux/vbx_probe.c`
-
-Run this kit-local part of the source invocation from the model directory.
-
-```bash
-./vbx_probe fcnn_v2_residual_dataset_a.vnnx
-```
-Source: `workers/polarfire-hybrid-control/docs/two_slot_handoff_2026-06-17.md`
-
-The source smoke invocation uses the embedded test input in the named model.
-
-```bash
-./vnnx_smoke fcnn_v2_residual_dataset_a.vnnx
-```
-Source: `workers/polarfire-hybrid-control/firmware/linux/README.md`
-
-The smoke helper polls without a bound. Stop if the probe reports a stalled or errored NPU.
-
-Source: `workers/polarfire-hybrid-control/firmware/linux/vnnx_smoke.c`
-
-Dequantize each INT8 output with `(q - zero_point) * scale_fix16 / 65536`.
-
-Source: `workers/polarfire-hybrid-control/firmware/linux/vnnx_smoke.c`
-
-For replayed input, the source loop quantizes CSV rows and writes the AI term to the PID.
-
-```bash
-./v250_pid_loop fcnn_v2_residual_dataset_a.vnnx 50 2 odmr_v250_rows.csv
-```
-Source: `workers/polarfire-hybrid-control/firmware/linux/README.md`
-
-Match the helper's input shape and layout before using another model or CSV.
-
-Source: `workers/polarfire-hybrid-control/firmware/linux/v250_pid_loop.c`
-
-Never read or write `0x60001000`. That page is the DMA controller, not the PID.
-
-Source: `workers/polarfire-hybrid-control/firmware/linux/two_slot_vbx_pid.dtso`
-Source: `workers/polarfire-hybrid-control/firmware/linux/README.md`
+`compile.json`, `sim.json`, and `infer.json` record remote commands.
+The files also record output identity after actual runs.
+`hw.json` holds runner metadata from the kit.
+Read its core version, control and error words, output metadata, and timing values.
+Do not report timing or output values from a dry run.
+Do not infer kit behavior from successful compile or simulation.
+Use `claim-log` to make each result row point to its run directory file.
 
 ## Checks
 
-- Read `vbx` from the UIO name output and the DMA device from the device listing.
-- Read `RESULT: INFERENCE COMPLETED` and the version register from the bounded probe output.
-- Read `inference complete.` and output quantization metadata from the smoke output.
-- Read actuator and watchdog fields from the replay output before claiming control behavior.
+- Read empty inspection failure lists before compiling.
+- Read command status, exit codes, size, and hashes from remote stage JSON files.
+- Read input and output metadata plus status from `hw.json`.
+- Read all comparison statuses and tolerances from `compare.json`.

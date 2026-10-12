@@ -1,16 +1,26 @@
 # Source map
 
-The worked source repository is https://github.com/jasonphillip/tychon-quantum-sensing. Paths below are relative to its root. This pack summarizes those files and does not copy source code.
+The kit's current command contracts are in `pfkit/cli.py`, `docs/pipeline.md`, and `docs/hardware.md`.
+The model contracts are in `docs/contracts.md` and `docs/adapters.md`.
+The limits on operator and quantization claims are in `docs/claims.md`.
+The agent and canonical skills use those kit files.
 
-| Skill | Source files |
+| Skill | Current kit source |
 |---|---|
-| `vbx-ops-guard` | `workers/odmr-edge-ml/src/odmr_edge_ml/validation/ops_guard.py`; `workers/odmr-edge-ml/src/odmr_edge_ml/validation/tflite_ops.py`; `workers/odmr-edge-ml/README.md`; `workers/odmr-edge-ml/AGENTS.md` |
-| `vbx-export-int8` | `workers/odmr-edge-ml/src/odmr_edge_ml/training/qat.py`; `workers/odmr-edge-ml/src/odmr_edge_ml/training/loop.py`; `workers/odmr-edge-ml/scripts/run_first_train.py`; `workers/odmr-edge-ml/scripts/fix_fcnn_export.py` |
-| `vbx-compile` | `workers/polarfire-hybrid-control/models/README.md`; `workers/polarfire-hybrid-control/AGENTS.md`; `workers/odmr-edge-ml/src/odmr_edge_ml/validation/tflite_ops.py` |
-| `libero-build` | `workers/polarfire-hybrid-control/libero/scripts/00_full_pipeline.tcl`; `workers/polarfire-hybrid-control/libero/scripts/01_scaffold_proj.tcl`; `workers/polarfire-hybrid-control/libero/scripts/02_import_ip.tcl`; `workers/polarfire-hybrid-control/libero/scripts/03_smartdesign.tcl`; `workers/polarfire-hybrid-control/libero/scripts/04_synth_pnr.tcl`; `workers/polarfire-hybrid-control/libero/scripts/05_smartpower_workload.tcl`; `workers/polarfire-hybrid-control/libero/scripts/closure_pipeline.tcl`; `workers/polarfire-hybrid-control/libero/scripts/extract_reports.sh`; `workers/polarfire-hybrid-control/Makefile`; `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`; `workers/polarfire-hybrid-control/README.md`; `workers/polarfire-hybrid-control/docs/workload_smartpower_2026-05-17.md` |
-| `smarthls-fixed-point` | `workers/polarfire-hybrid-control/hls/Makefile`; `workers/polarfire-hybrid-control/hls/src/watchdog.cpp`; `workers/polarfire-hybrid-control/Makefile`; `workers/polarfire-hybrid-control/README.md` |
-| `kit-program` | `workers/polarfire-hybrid-control/libero/scripts/program_kit.tcl`; `workers/polarfire-hybrid-control/libero/scripts/read_idcode.tcl`; `workers/polarfire-hybrid-control/libero/scripts/read_idcode_libero.tcl` |
-| `kit-run-inference` | `workers/polarfire-hybrid-control/firmware/linux/README.md`; `workers/polarfire-hybrid-control/firmware/linux/v250_pid_loop.c`; `workers/polarfire-hybrid-control/docs/v250_pid_loop_2026-06-21.md`; `workers/polarfire-hybrid-control/docs/rung_f_v250_on_silicon_results_2026-06-16.md`; `workers/polarfire-hybrid-control/README.md` |
-| `fabric-watchdog-fallback` | `workers/polarfire-hybrid-control/docs/watchdog_fallback_test_plan.md`; `workers/polarfire-hybrid-control/docs/watchdog_trip_measured_2026-07-01.md`; `workers/polarfire-hybrid-control/hls/src/watchdog.cpp`; `workers/polarfire-hybrid-control/libero/hdl/watchdog_timer.v`; `workers/polarfire-hybrid-control/tools/run_wd_fallback.sh`; `workers/polarfire-hybrid-control/tools/wd_fallback_analyze.py` |
-| `claim-log` | `workers/polarfire-hybrid-control/AGENTS.md`; `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`; `README.md` |
-| `hls4ml-libero-route` | `docs/model-to-v250.md` records the route and explicitly says it was not run. The dates and PR status in this skill also come from the user brief. |
+| `dataset-and-training` | `pfkit/cli.py`, `pfkit/pipeline.py`, `docs/contracts.md` |
+| `adapt-your-model` | `pfkit/cli.py`, `pfkit/adapters.py`, `pfkit/inspect.py`, `docs/claims.md` |
+| `kit-run-inference` | `pfkit/cli.py`, `pfkit/remote_ops.py`, `docs/hardware.md` |
+| `claim-log` | `pfkit/reporting.py`, `docs/contracts.md` |
+| `vbx-ops-guard`, `vbx-export-int8`, `vbx-compile` | Thin entries that route to the canonical skills above. |
+| `libero-build`, `kit-program` | `docs/hardware.md`, `hw/` |
+| `fabric-watchdog-fallback`, `smarthls-fixed-point`, `hls4ml-libero-route` | Optional case study paths; no kit runtime claim. |
+
+The worked source repository is:
+
+```text
+https://github.com/jasonphillip/tychon-quantum-sensing
+```
+
+The `smarthls-fixed-point` skill quotes its case study test command.
+Its `Source:` lines identify the case study README and Makefile.
+Other skills use the kit commands instead of copying case study commands.

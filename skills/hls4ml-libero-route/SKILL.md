@@ -1,6 +1,6 @@
 ---
 name: hls4ml-libero-route
-description: Choose the short Dense-only hls4ml Libero route when fabric inference fits.
+description: Assess the optional Dense-only hls4ml fabric route.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
@@ -9,36 +9,51 @@ metadata:
 
 # hls4ml Libero route
 
-Choose this route for a small Dense-only network that should reside in fabric.
-Use the VectorBlox path for the V250 runtime and its INT8 TFLite to VNNX flow.
-The hls4ml Libero backend uses SmartHLS. The tutorial dates release v1.3.0 to 2026-03-20.
-The tutorial calls PR #1240 an initial implementation. This pack has not run it.
+This is an optional fabric route for a small Dense-only network.
+The kit's main model path uses pfkit and the V250 runtime.
+Read `docs/scope.md` before choosing a target.
+The case study tutorial describes an early hls4ml Libero backend.
+This pack has not run that route.
 
-Source: `docs/model-to-v250.md`
+## Selection
 
-The tutorial says the backend handles Dense layers only. Check the model layer list before choosing this route.
+Inspect the model layers before choosing this route.
+Require Dense-only compute layers under the backend's current rules.
+Do not infer support for a convolution or branch from Dense support.
+Read the installed hls4ml release and backend capabilities.
+Read the SmartHLS and Libero versions from the tools host.
+Record the selected target device and design configuration.
 
-Source: `docs/model-to-v250.md`
+## Stages
 
-This route builds network logic in fabric. The V250 route compiles TFLite into a runtime model.
+Keep conversion, software test, synthesis, and kit output separate.
+A converted project is evidence of conversion only.
+A synthesized design is evidence of synthesis only.
+A kit run needs a programmed image and actual output.
+Use a new report directory for each model and tool version.
+Keep generated project files with conversion logs.
+Keep synthesis and timing reports with the build identity.
 
-Source: `docs/model-to-v250.md`
+## Relationship to pfkit
 
-Keep conversion, synthesis, and kit inference as separate checks. A successful conversion is not a kit result.
+Use `dataset-and-training` when the input data follows the kit contract.
+Use `adapt-your-model` for the canonical V250 INT8 route.
+Use this skill only for the optional fabric route.
+Do not label hls4ml output as a pfkit VNNX result.
+Do not compare raw numbers across routes without matched inputs.
+For a V250 run, use the pfkit compare stage and its YAML tolerances.
 
-Source: `docs/model-to-v250.md`
+## Evidence
 
-Record the hls4ml release and generated project path with the build output.
-
-Source: `docs/model-to-v250.md`
-
-Verify backend support with the installed release before claiming a build.
-
-Source: `docs/model-to-v250.md`
+The case study tutorial is a route description.
+It does not establish that this kit compiled or ran a fabric model.
+Keep the installed backend output as the primary source.
+Record errors as failed stages rather than skipping them.
+Use `claim-log` for result rows and evidence classes.
 
 ## Checks
 
 - Read Dense-only layers from the model inspection output.
-- Read the installed hls4ml version and selected Libero backend from tool output.
-- Read a completed conversion and generated project path from tool output.
-- Read synthesis and kit output before claiming a deployed fabric model.
+- Read the installed hls4ml version and backend from tool output.
+- Read conversion output and generated project path before naming a conversion.
+- Read synthesis and kit output before claiming deployed behavior.

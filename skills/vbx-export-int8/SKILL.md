@@ -1,64 +1,56 @@
 ---
 name: vbx-export-int8
-description: Train with QAT and export a static-shape INT8 TFLite model.
+description: Route INT8 export requests to the pfkit model adaptation workflow.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
   version: 2026.10.0
 ---
 
-# QAT and INT8 export
+# INT8 export entry
 
-Use `prepare_model_qat` for FX graph QAT. Preserve input order and record the checkpoint and dataset hashes.
+Use `adapt-your-model` for the canonical export and inspect commands.
+Use `dataset-and-training` when a dataset or checkpoint must be created.
+This skill keeps the earlier name available for discovery.
+It does not define a second converter path.
 
-Source: `workers/odmr-edge-ml/src/odmr_edge_ml/training/qat.py`
+## Inputs
 
-The QAT code uses symmetric INT8 with one scale per tensor for activations and weights.
-The VectorBlox SDK 2.0.x path uses per-tensor weights, not per-channel weights.
+Ask for the example name and its run directory.
+Read its `example.yaml` for shape, layout, units, and adapter.
+Read `dataset.manifest.json` for the dataset identity.
+Read `training.json` for the checkpoint hash and epoch count.
+Check that the run directory belongs to the selected example.
 
-Source: `workers/odmr-edge-ml/src/odmr_edge_ml/training/qat.py`
+## Decision path
 
-The source FCNN has a `view()` that reads the batch size at runtime.
-That dynamic batch can leak SHAPE, STRIDED_SLICE, and PACK into TFLite.
-The compiler rejects those operators.
+If the example is new, follow `dataset-and-training` first.
+If the checkpoint exists, follow `adapt-your-model` at export.
+Its steps create `model.tflite` and `export.manifest.json`.
+Its inspection step creates `inspect.json`.
+Do not substitute the case study's export script.
+That script targets a different model and converter path.
 
-Source: `workers/odmr-edge-ml/src/odmr_edge_ml/models/fcnn_v2.py`
+The converter receives one fixed input shape.
+The adapter checks Torch and Keras output agreement on a sample.
+The converter uses a representative set from the selected split.
+It quantizes input and output to INT8.
+The manifest records whether the fallback quantizer was used.
+It records a primary converter error when fallback occurred.
 
-Use a fixed batch of one and an already-shaped NHWC input for the worked FCNN export.
-The script copies trained weights, calibrates, converts, and checks the result.
+## Evidence
 
-```bash
-python scripts/fix_fcnn_export.py
-```
-Source: `workers/odmr-edge-ml/scripts/fix_fcnn_export.py`
-
-For another model, copy these converter settings from the source script.
-Choose representative samples that span its expected input range.
-
-```python
-converter = tf.lite.TFLiteConverter.from_keras_model(tf_model)
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
-converter.representative_dataset = representative_dataset
-converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
-converter.inference_input_type = tf.int8
-converter.inference_output_type = tf.int8
-```
-Source: `workers/odmr-edge-ml/scripts/fix_fcnn_export.py`
-
-The source representative dataset yields one sample per call.
-It caps calibration at 1,000 samples.
-
-Source: `workers/odmr-edge-ml/scripts/fix_fcnn_export.py`
-
-Check input and output dtypes, tensor scales, static shape, and operator list.
-Stop before compilation if the exported graph contains banned operations.
-
-Source: `workers/odmr-edge-ml/scripts/fix_fcnn_export.py`
-Source: `workers/odmr-edge-ml/src/odmr_edge_ml/validation/tflite_ops.py`
+Keep the run directory together with the exported model.
+Record the calibration indices before interpreting output agreement.
+Treat Torch fake quantization scales as comparison evidence.
+The converter generates new tensor quantization values.
+Use the float comparison tolerance from the example contract.
+Keep a failed inspect result visible and stop before compile.
+Use `docs/claims.md` for current probe limits.
 
 ## Checks
 
-- Read an exported TFLite path and byte size from the converter output.
-- Read INT8 input and output dtypes with fixed input dimensions from model metadata.
-- Read no SHAPE, STRIDED_SLICE, or PACK from the operator check output.
-- Read the representative sample count from the export log.
+- Read the adapter and calibration indices from `export.manifest.json`.
+- Read the TFLite size and SHA-256 from `export.manifest.json`.
+- Read input and output INT8 metadata from `inspect.json`.
+- Read empty unsupported and limit violation lists before compile.

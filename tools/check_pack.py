@@ -26,6 +26,16 @@ JSON_FILES = (
     ".cursor-plugin/marketplace.json",
     ".agents/plugins/marketplace.json",
 )
+REQUIRED_DOCS = (
+    "README.md", "SOURCES.md", "docs/install.md", "docs/getting-started.md",
+    "docs/scope.md", "docs/pipeline.md", "docs/hardware.md", "docs/claims.md",
+)
+SKILL_NAMES = {
+    "adapt-your-model", "claim-log", "dataset-and-training",
+    "fabric-watchdog-fallback", "hls4ml-libero-route", "kit-program",
+    "kit-run-inference", "libero-build", "smarthls-fixed-point",
+    "vbx-compile", "vbx-export-int8", "vbx-ops-guard",
+}
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -56,7 +66,11 @@ def source_paths(path: Path) -> list[str]:
 def files_for_scan(root: Path) -> list[Path]:
     files: list[Path] = []
     for directory, subdirs, names in os.walk(root):
-        subdirs[:] = [name for name in subdirs if name not in (".git", "__pycache__")]
+        relative = Path(directory).relative_to(root)
+        excluded = {".git", "__pycache__", ".venv", "deps", "reports"}
+        if relative == Path("probes"):
+            excluded.add("out")
+        subdirs[:] = [name for name in subdirs if name not in excluded]
         files.extend(Path(directory) / name for name in names)
     return files
 
@@ -71,8 +85,8 @@ def main() -> int:
     if not source.is_dir():
         errors.append(f"source root absent: {source}")
     skills = sorted((root / "skills").glob("*/SKILL.md"))
-    if len(skills) != 10:
-        errors.append(f"expected 10 skills, found {len(skills)}")
+    if {skill.parent.name for skill in skills} != SKILL_NAMES:
+        errors.append("skill set differs from expected names")
     for skill in skills:
         rel = skill.relative_to(root)
         try:
@@ -88,13 +102,7 @@ def main() -> int:
         if fields.get("metadata.version") != VERSION:
             errors.append(f"{rel}: version differs from plugin")
         lines = skill.read_text(encoding="utf-8").splitlines()
-        for index, line in enumerate(lines):
-            if line == "```" and index + 1 < len(lines):
-                if not lines[index + 1].startswith("Source: `"):
-                    errors.append(f"{rel}:{index + 1}: code block has no immediate Source")
         paths = source_paths(skill)
-        if not paths:
-            errors.append(f"{rel}: no Source paths")
         for item in paths:
             target = (source / item).resolve()
             if not target.is_relative_to(source) or not target.is_file():
@@ -103,6 +111,16 @@ def main() -> int:
             errors.append(f"{rel}: final Checks section absent")
         if not 40 <= len(lines) <= 90:
             errors.append(f"{rel}: expected 40 to 90 lines, found {len(lines)}")
+    for item in REQUIRED_DOCS:
+        if not (root / item).is_file():
+            errors.append(f"required document absent: {item}")
+    install = (root / "docs/install.md").read_text(encoding="utf-8")
+    for marker in ("2.1.296", "0.157.1", "--plugin-dir", "--marketplace", "not yet tested", "Cursor"):
+        if marker not in install:
+            errors.append(f"docs/install.md: expected installation detail absent: {marker}")
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    if "Cursor-Compatible" in readme:
+        errors.append("README.md: untested Cursor badge present")
     agent = root / "agents/polarfire-bringup.md"
     try:
         fields = frontmatter(agent)
@@ -135,6 +153,8 @@ def main() -> int:
             continue
         if data.get("name") != NAME or data.get("version") != VERSION:
             errors.append(f"{item}: name or version differs")
+        if item == ".codex-plugin/plugin.json" and data.get("skills") != "./skills/":
+            errors.append(f"{item}: skills directory differs")
         for plugin in data.get("plugins", []):
             if plugin.get("name") != NAME or plugin.get("version") != VERSION:
                 errors.append(f"{item}: plugin name or version differs")
@@ -145,7 +165,7 @@ def main() -> int:
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            errors.append(f"non-text tracked file: {rel}")
+            # Binary artifacts are not public prose.
             continue
         for term in BANNED:
             if re.search(r"(?<![A-Za-z0-9])" + re.escape(term) + r"(?![A-Za-z0-9])", text, re.I):

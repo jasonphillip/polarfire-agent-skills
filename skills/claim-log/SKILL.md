@@ -1,6 +1,6 @@
 ---
 name: claim-log
-description: Tie each hardware claim to a report file and its primary output.
+description: Tie every model and hardware result to a run directory file.
 license: Apache-2.0
 metadata:
   author: Jason Phillip
@@ -9,41 +9,56 @@ metadata:
 
 # Claim log
 
-Create a demonstrated-state table. Give every row a scope, result, evidence file path, and evidence class. Distinguish simulation, synthesis, software test, and kit measurement. Do not promote a design target to a measured result.
+Use `docs/contracts.md` and `docs/claims.md` for evidence boundaries.
+Read the current run directory before writing a result row.
+Run the canonical report command in `adapt-your-model` after the last completed stage.
+The report records package versions, revisions, command history, and file hashes.
+It does not turn a missing stage into a completed stage.
 
-Source: `README.md`
+## Row format
 
-Use tool output, raw logs, and generated reports as primary evidence. If a claim is inferred, label it and state the missing check. Preserve the exact command, tool version, input hash, timestamp, and exit code beside each result.
+Keep one row for each check and evidence class.
+Name the example, input, model, and run directory.
+Name the exact result file beside the measured value.
+Name the command and its exit code when available.
+Label the evidence class as local test, compile, simulation, synthesis, or kit.
+Use `not run` for stages without output.
+Do not copy a measurement from a different model, kit, or image.
+Keep failed checks visible in the table.
+Mark an inference as an inference and state its missing check.
 
-Source: `workers/polarfire-hybrid-control/AGENTS.md`
+## Model evidence
 
-Audit a copied Libero report directory in strict mode.
+`dataset.manifest.json` records data shape and hash.
+`training.json` records epochs and checkpoint hash.
+`eval.json` records test error and units.
+`export.manifest.json` records TFLite identity and calibration.
+`inspect.json` records graph and tensor acceptance.
+`compare.json` records each numerical comparison and its tolerance.
 
-```bash
-python3 tools/audit_libero_reports.py --strict <report-dir>
-```
-Source: `workers/polarfire-hybrid-control/Makefile`
+## Remote evidence
 
-`<report-dir>` replaces the Makefile variable `$(REPORT_DIRS)`. Supply the report directory under review.
+`compile.json`, `sim.json`, and `infer.json` record remote commands.
+`hw.json` is the runner's hardware metadata.
+`commands.jsonl` records command times and exit codes.
+`artifacts.json` records hashes of files in the run directory.
+`summary.md` lists recorded and unrun stages.
+A compiler pass is an artifact result.
+A simulator pass is a simulation result.
+A kit pass needs actual kit output.
+A timing claim needs the current timing report.
 
-The audit checks positive slack, retained PID hierarchy and resources, and critical pruning markers. Record its output and exit code. Do not call a missing or unparseable bundle a pass.
+## Reporting rule
 
-Source: `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`
-
-Keep one row per measured result. Name the model, bitstream, kit run, and source report in each row.
-
-Source: `workers/polarfire-hybrid-control/AGENTS.md`
-
-Mark software simulation, synthesis, and kit output as separate evidence classes. Do not merge their limits.
-
-Source: `docs/model-to-v250.md`
-
-Keep failed checks in the log. A missing or unparseable report remains an unresolved result.
-
-Source: `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`
+Never write a number that was not read from tool output.
+Every result row cites a run directory file.
+For hardware build results, cite the raw report outside the model run as well.
+Keep the original output when a parser fails.
+Do not mark an unparseable result as a pass.
 
 ## Checks
 
-- Read a primary report path beside every result row.
-- Read the command, tool version, input hash, and exit code beside each row.
-- Read a successful strict audit result before reporting timing closure.
+- Read a run directory file path beside each result row.
+- Read the command exit code and artifact identity for each completed stage.
+- Read `not run` explicitly for each absent stage.
+- Read raw hardware output before reporting timing or kit behavior.
