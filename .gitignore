@@ -9,3 +9,6 @@ watchdog-runs/
 deps/
 .venv/
 reports/*/outputs/
+reports/
+probes/out/
+*.egg-info/
