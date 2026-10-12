@@ -1,0 +1,62 @@
+{
+  "arrays": {
+    "test_x": {
+      "dtype": "float32",
+      "shape": [
+        100,
+        100
+      ],
+      "units": "normalized PL intensity"
+    },
+    "test_y": {
+      "dtype": "float32",
+      "shape": [
+        100,
+        1
+      ],
+      "units": "microtesla"
+    },
+    "train_x": {
+      "dtype": "float32",
+      "shape": [
+        300,
+        100
+      ],
+      "units": "normalized PL intensity"
+    },
+    "train_y": {
+      "dtype": "float32",
+      "shape": [
+        300,
+        1
+      ],
+      "units": "microtesla"
+    },
+    "val_x": {
+      "dtype": "float32",
+      "shape": [
+        100,
+        100
+      ],
+      "units": "normalized PL intensity"
+    },
+    "val_y": {
+      "dtype": "float32",
+      "shape": [
+        100,
+        1
+      ],
+      "units": "microtesla"
+    }
+  },
+  "example": "odmr-mlp",
+  "generator_version": "pinned case study 646d575",
+  "normalization": "per-spectrum min-max to [0,1]",
+  "seed": 12345,
+  "sha256": "07042798817589ef37597f88b02c98ad67fc87fb6ddf318065bd276dddc0a21d",
+  "split_sizes": {
+    "test": 100,
+    "train": 300,
+    "val": 100
+  }
+}

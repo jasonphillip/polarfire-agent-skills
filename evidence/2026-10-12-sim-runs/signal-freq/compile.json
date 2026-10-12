@@ -1,0 +1,30 @@
+{
+  "commands": [
+    {
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work'",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp reports/20261012-173052-signal-freq-sim2/model.tflite <tools-host>:pfkit-work/model.tflite",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source ~/vbx-env/bin/activate && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/model.tflite -o <tools-host-home>/pfkit-work/model.vnnx'\"'\"''",
+      "exit_code": 0,
+      "stderr": "2026-10-12 17:30:58.607402: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.\n2026-10-12 17:30:58.865273: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nINFO: Created TensorFlow Lite XNNPACK delegate for CPU.\n",
+      "stdout": ""
+    },
+    {
+      "command": "scp <tools-host>:pfkit-work/model.vnnx reports/20261012-173052-signal-freq-sim2/model.vnnx",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "sha256": "9fdc6a8524be0e5183ca044f6f72507398ed5865e667b7c20bbae00d9bbcdf2f",
+  "size_bytes": 11552
+}

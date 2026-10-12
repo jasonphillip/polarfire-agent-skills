@@ -1,0 +1,9 @@
+{"time_utc": "2026-10-12T21:30:53.136058+00:00", "command": "pfkit data signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:30:53.443943+00:00", "command": "pfkit train signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:30:53.448077+00:00", "command": "pfkit eval signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:30:54.608538+00:00", "command": "pfkit export signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:30:54.610389+00:00", "command": "pfkit inspect signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:31:02.210849+00:00", "command": "pfkit compile signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:31:03.431111+00:00", "command": "pfkit sim signal-freq --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:31:03.451898+00:00", "command": "pfkit example run signal-freq --until sim --run-dir reports/20261012-173052-signal-freq-sim2", "exit_code": 0}
+{"time_utc": "2026-10-12T21:31:05.381499+00:00", "command": "pfkit compare signal-freq --run-dir reports/20261012-173052-signal-freq-sim2 --sim reports/20261012-173052-signal-freq-sim2/sim.npz", "exit_code": 0}

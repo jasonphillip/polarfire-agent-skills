@@ -1,0 +1,29 @@
+{
+  "commands": [
+    {
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work'",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp reports/20261012-173105-odmr-mlp-sim2/model.vnnx reports/20261012-173105-odmr-mlp-sim2/input.int8.npy <kit-root>/pfkit/remote/vbx_sim_run.py <tools-host>:pfkit-work/",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source ~/vbx-env/bin/activate && python <tools-host-home>/pfkit-work/vbx_sim_run.py --model <tools-host-home>/pfkit-work/model.vnnx --input <tools-host-home>/pfkit-work/input.int8.npy --output <tools-host-home>/pfkit-work/sim.npz'\"'\"''",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "scp <tools-host>:pfkit-work/sim.npz reports/20261012-173105-odmr-mlp-sim2/sim.npz",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "sha256": "1075575099eefef6b79c650ccae69c487e3dee09acb72026758a885a26090bbb"
+}

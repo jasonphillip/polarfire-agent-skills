@@ -1,0 +1,19 @@
+{
+  "commands.jsonl": "5ad286d1bc50adee054b40f43f8dcb6ffe0dea14f0e4909cbe360ebeece38d32",
+  "compile.json": "4cd93312bde902d3b77642ee446dcf8fc90122d6ca5bc2b7741e66e8385aff05",
+  "dataset.manifest.json": "903b3b5680ff58a123fde83ce6c8d575f98b297b3c54af10e7f9e6bffc584fb0",
+  "dataset.npz": "17b6ffad7911481d50b192a943f4441359504b32dcdeee4858f0cfcc27078952",
+  "eval.json": "d8f0cf2f225c23bd2e3a8e7dd275855aa5cba24d7e2447209bd3d7668c2d8d38",
+  "export.manifest.json": "b9a29f4f22757fb9a4a7bd7a608b08ac775ded71a89a43fbfd7dde4c0df31119",
+  "input.int8.bin": "38fe4548815b331b338f1e44187dfebadfe37ca259eb1bfa4f5d25bd7ddbcab7",
+  "input.int8.npy": "14eda7b06151ef49394ad130df3ce3df023110801963ffd3db2dee9b7e232f1c",
+  "inspect.json": "4740a7ebd7ffe4be79c1436747e3f0f0194647bb0c7e4040e367a509a27fd6c3",
+  "model.pt": "5e987f896bfc25dda903e167245c5b9b331ee366c5862380ec672abe3a6742ad",
+  "model.tflite": "4055502d62b3144c11d98fbc733257f966365190521d1162aee8dd6b0e3b67f0",
+  "model.vnnx": "9fdc6a8524be0e5183ca044f6f72507398ed5865e667b7c20bbae00d9bbcdf2f",
+  "pip-freeze.txt": "8a4af4747ef1accddfdb0aca4d9e5f0fc5a41e37e18af0a7bffb1bc7486e1f6c",
+  "revisions.json": "d567c781ad1757893107b5a4fd4d8e0be8077d1ed1ac7867fc6cdd3ee11c9e13",
+  "sim.json": "885a7e00e1035bc583a08f81b4223c9af215893e094e7fcd6c7d368b40d70293",
+  "sim.npz": "d03d415832191f5087352ed3c143a7d9ea95dbaa3a0aa7a480e5804519177d15",
+  "training.json": "09b66856203a9a267a50971ed5c1c83f1391e545f8bfd8837c974adf9df104db"
+}

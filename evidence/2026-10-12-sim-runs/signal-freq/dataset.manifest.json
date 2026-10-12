@@ -1,0 +1,62 @@
+{
+  "arrays": {
+    "test_x": {
+      "dtype": "float32",
+      "shape": [
+        128,
+        64
+      ],
+      "units": "sample amplitude"
+    },
+    "test_y": {
+      "dtype": "float32",
+      "shape": [
+        128,
+        1
+      ],
+      "units": "hertz"
+    },
+    "train_x": {
+      "dtype": "float32",
+      "shape": [
+        512,
+        64
+      ],
+      "units": "sample amplitude"
+    },
+    "train_y": {
+      "dtype": "float32",
+      "shape": [
+        512,
+        1
+      ],
+      "units": "hertz"
+    },
+    "val_x": {
+      "dtype": "float32",
+      "shape": [
+        128,
+        64
+      ],
+      "units": "sample amplitude"
+    },
+    "val_y": {
+      "dtype": "float32",
+      "shape": [
+        128,
+        1
+      ],
+      "units": "hertz"
+    }
+  },
+  "example": "signal-freq",
+  "generator_version": "pfkit 0.1.0",
+  "normalization": "none",
+  "seed": 451,
+  "sha256": "17b6ffad7911481d50b192a943f4441359504b32dcdeee4858f0cfcc27078952",
+  "split_sizes": {
+    "test": 128,
+    "train": 512,
+    "val": 128
+  }
+}
