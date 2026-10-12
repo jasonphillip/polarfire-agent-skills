@@ -27,8 +27,7 @@ results, machine roles, and evidence paths.
 
 ## Known limits
 
-The kit's Libero build is in progress. Its result will be added to
-`docs/validation.md`. An image built by this kit has not been programmed.
+The kit's own Libero build ran on 2026-10-12 on the tools host: timing met, programming job exported, kit not programmed with it (docs/validation.md, evidence/2026-10-12-libero-build/).
 No co-simulation or forced hardware NPU timeout was run.
 A Codex plugin install and Cursor loading were not tested.
 Other boards, V sizes, and SDK 3.x are outside this release's validated path.
