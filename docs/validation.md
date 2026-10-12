@@ -1,24 +1,31 @@
 # Validation record, 2026-10-12
 
-This record separates orchestration, tools-host, and hardware results.
-The clean-checkout logs are to be added under `evidence/2026-10-12-clean-checkout/` by the main session.
-That evidence path is reserved here; this document does not claim the logs are already present.
+Each result names the machine role and the evidence available in this checkout. The Libero build is still running.
 
 | Stage | Host | Result | Evidence path |
 |---|---|---|---|
-| Environment and inspect | Clean Linux aarch64, Python 3.11.17 | `make env` completed in 33 seconds with a warm pip cache. `pfkit example run signal-freq --until inspect` exited 0. Inspect showed three `CONV_2D` operators and `RESHAPE`; flags were informational per-channel notes only. | `evidence/2026-10-12-clean-checkout/` (logs forthcoming) |
-| Guard negatives and tests | Clean Linux aarch64 | `pfkit inspect` exited 1 for a SHAPE model with unsupported `SHAPE`. It exited 1 for a PACK model with a blocking flag. `PFKIT_SDK_ROOT=/nonexistent` reported `VectorBlox operator table missing` and suggested `pfkit deps fetch`. `pytest -q` passed 10 tests. | `evidence/2026-10-12-clean-checkout/` (logs forthcoming) |
-| Environment and inspect | Clean macOS 27.0.1 arm64, Homebrew Python 3.11.14 | The first `make env` failed on `torch==2.11.0+cpu`, a Linux-only local tag. After the pin changed to `torch==2.11.0` in commit `c28adbe`, `make env` succeeded and fetched three pinned dependencies. `pfkit example run signal-freq --until inspect` exited 0 with the same operators and flags. | `evidence/2026-10-12-clean-checkout/` (logs forthcoming) |
-| Tests | Clean macOS arm64 | `pytest -q` passed 9 tests and failed `test_examples_through_inspect[odmr-mlp]`. Importing the case-study simulator reached `simos`, whose `utils/exporter.py` imported `tkinter`. Homebrew Python lacked `_tkinter`. `brew install python-tk@3.11` is the proposed fix; it was not verified in that run. | `evidence/2026-10-12-clean-checkout/` (logs forthcoming) |
-| Compile, simulate, compare | x86 Windows tools host with WSL Ubuntu, VectorBlox SDK 2.0.3 | Both examples compiled and simulated. Each simulator output differed from TFLite by 0 LSB. | `evidence/2026-10-12-sim-runs/signal-freq/compare.json`; `evidence/2026-10-12-sim-runs/odmr-mlp/compare.json` |
-| Runner cross-build | x86 Windows tools host | `hw/vbx_run` cross-compiled with SmartHLS RISC-V GCC 10.2.0. The MSYS shell lacked `make`; the direct GCC line from `hw/Makefile` succeeded. SmartHLS supplies `mingw32-make` as an alternative. | `evidence/2026-10-12-toolshost/runner-build.txt` |
-| Hardware inference and `sim_vs_hw` | Icicle Kit (MPFS250T, CoreVectorBlox version word 0x20000000, kernel linux4microchip 2026.04.1) | Done on 2026-10-12 with the earlier runner: both examples ran on the V250 through `pfkit infer`; `sim_vs_hw` max 0 LSB and `tflite_vs_sim` max 0 LSB for both; signal-freq 29 us median over 200 repeats, odmr-mlp 32 us median. Negative paths on the kit: wrong input size exit 2, missing model exit 3, V500-compiled model refused with exit 2 after SDK init, V250 rerun afterwards byte-identical. The revised runner validates the model before SDK init; its timeout and multi-sample paths have only been tested on the host with a fake driver. | `evidence/2026-10-12-hardware/` |
+| Clean environment and inspect | Linux aarch64, Python 3.11.17 | `make env` and `signal-freq` through inspect exited 0. Inspect found three `CONV_2D` operators and `RESHAPE`, with no blocking flags. | `evidence/2026-10-12-clean-checkout/linux-aarch64.txt` |
+| Guard checks and tests | Linux aarch64 | SHAPE and PACK negative models exited 1. A missing SDK operator table produced a specific error. Ten tests passed. | `evidence/2026-10-12-clean-checkout/linux-aarch64.txt` |
+| Clean environment and inspect | macOS arm64, Homebrew Python 3.11.14 | The first environment attempt failed on the Linux-only `torch==2.11.0+cpu` pin. With `torch==2.11.0`, environment setup and `signal-freq` inspect passed. | `evidence/2026-10-12-clean-checkout/macos-arm64-run1.txt`; `evidence/2026-10-12-clean-checkout/macos-arm64-run2.txt` |
+| Tk and tests | macOS arm64, Homebrew Python 3.11.14 | After `python-tk@3.11` was installed, 11 tests passed and `odmr-mlp` ran through inspect. | `evidence/2026-10-12-clean-checkout/macos-arm64-run3-tk.txt` |
+| Claude Code client workflow | Clean clone, Claude Code 2.1.296 | The plugin loaded the `dataset-and-training` skill and `polarfire-bringup` agent instructions. The `signal-freq` workflow reached inspect with exit 0 and reported the correct operators, flags, and eval MAE. | `evidence/2026-10-12-agent-clients/claude-code.md` |
+| Codex CLI client workflow | Checkout, Codex CLI 0.157.1 | Codex read the skill and agent files directly. The same workflow reached inspect with exit 0. A plugin install was not exercised. | `evidence/2026-10-12-agent-clients/codex.md` |
+| Train, export, compile, simulate, compare | Orchestration host and x86 Windows tools host with WSL Ubuntu, SDK 2.0.3 | Both examples compiled and simulated for V250. TFLite versus simulator differed by 0 LSB. | `evidence/2026-10-12-sim-runs/signal-freq/`; `evidence/2026-10-12-sim-runs/odmr-mlp/` |
+| Runner cross-build | x86 Windows tools host | SmartHLS RISC-V GCC 10.2.0 built the earlier runner with exit 0. The hardened runner was also cross-built for the kit run below. | `evidence/2026-10-12-toolshost/runner-build.txt`; `evidence/2026-10-12-hardware/batch64/README.md` |
+| First kit inference and negative paths | Icicle Kit, MPFS250T, case-study V250 image | Both examples completed with 0 LSB simulator versus hardware difference. The earlier runner refused V500 with exit 2 after SDK init. Wrong input size exited 2; missing model exited 3. | `evidence/2026-10-12-hardware/README.md`; `evidence/2026-10-12-hardware/negatives/` |
+| Hardened runner failure paths | Linux host, fake driver | `make -C hw test` passed nine scenarios. The whole-operation watchdog returned exit 4 for `never_completes` and `start_blocks`; the error register returned 5; init failure returned 3; V500 preflight and bad input size returned 2. Model and input validation ran before SDK init. | `hw/tests/test_fake_driver.py`; `hw/tests/fake_vbx_cnn_api.c` |
+| Hardened runner preflight and inference | Icicle Kit, same V250 image | The cross-built hardened runner refused V500 with exit 2 before SDK init, then completed a V250 run. | `evidence/2026-10-12-hardware/batch64/README.md` |
+| Held-out batch and timing | Tools-host simulator and Icicle Kit | For each example, 64 held-out samples gave 0 LSB for simulator versus hardware and TFLite versus simulator. Float versus TFLite max error was 0.0414 Hz for `signal-freq` and 1.6713 microtesla for `odmr-mlp`, within tolerance. One-sample medians over 200 repeats were 0.024 ms and 0.034 ms, respectively. | `evidence/2026-10-12-hardware/batch64/README.md`; `evidence/2026-10-12-hardware/batch64/signal-freq/`; `evidence/2026-10-12-hardware/batch64/odmr-mlp/` |
+| Kit reference-design build | x86 Windows tools host, Libero SoC 2025.2 | **In progress; result appended by the main session.** The first attempt failed on COREAXI4INTERCONNECT 3.0.130. The second used the 2.9.100 `PIN_VLNV` map, passed IP configuration, and entered Synplify synthesis. This is a progress report, not a completed build result. | `hw/build_reference_design.sh`; main-session build evidence pending |
+| Secret scan | Release checkout | Scan reported hash false positives only, with no key, token, or password finding. | `evidence/2026-10-12-secret-scan.md` |
 
-For the clean orchestration path, the measured commands were `make env`,
-`pfkit example run signal-freq --until inspect`, and `pytest -q`.
-The guard checks used `pfkit inspect` on separate SHAPE and PACK models.
-The missing-SDK check set `PFKIT_SDK_ROOT=/nonexistent` for `pfkit inspect`.
-See `docs/hardware.md` for the direct runner GCC command.
+LIBERO_BUILD_RESULT_PLACEHOLDER: Main session will append the final build result and evidence path here.
 
-Hardware inference and the simulator-to-hardware comparison were run on 2026-10-12 on one Icicle Kit with the case study's image; the kit's own build from `hw/build_reference_design.sh` has not been run on hardware.
-Plan about one hour with the kit powered, on the LAN, and a working login.
+## Limits
+
+- No co-simulation was run.
+- The Libero build result is pending.
+- A kit-built image has not been programmed. Programming needs separate approval.
+- A forced NPU timeout was tested with the fake driver only, not on hardware.
+- A Codex plugin install and Cursor loading were not tested.
+- The `odmr-mlp` example needs Tk with Homebrew Python 3.11 on macOS. Installing `python-tk@3.11` resolved this in the clean-checkout run.

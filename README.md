@@ -20,9 +20,10 @@ Compile and sim need a configured tools host.
 Infer needs a configured kit and built `hw/vbx_run`.
 Each stage writes evidence in its run directory.
 
-Validated: see `docs/validation.md` and `evidence/2026-10-12-toolshost/`,
-`evidence/2026-10-12-sim-runs/`, and `evidence/2026-10-12-clean-checkout/`.
-Hardware: both examples ran on one Icicle Kit on 2026-10-12 with 0 LSB simulator-to-hardware difference (`evidence/2026-10-12-hardware/`). Not yet: a bitstream built by this kit's own build script.
+Validated: clean Linux and macOS inspect runs, client workflows, simulator
+checks, and 64-sample kit runs. See `docs/validation.md`.
+Limits: the Libero build is in progress, and the kit-built image has not been
+programmed. See `docs/validation.md` and `docs/release-notes.md`.
 
 Read `docs/scope.md` for the supported profile.
 Read `docs/pipeline.md` for commands and outputs.

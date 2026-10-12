@@ -29,7 +29,7 @@ JSON_FILES = (
 REQUIRED_DOCS = (
     "README.md", "SOURCES.md", "docs/install.md", "docs/getting-started.md",
     "docs/scope.md", "docs/pipeline.md", "docs/hardware.md", "docs/claims.md",
-    "docs/validation.md",
+    "docs/validation.md", "docs/release-notes.md",
 )
 SKILL_NAMES = {
     "adapt-your-model", "claim-log", "dataset-and-training",
