@@ -1,0 +1,23 @@
+{
+  "name": "polarfire-agent-skills",
+  "version": "2026.10.0",
+  "description": "Agent skills for PolarFire SoC V250 inference and fabric control",
+  "author": {
+    "name": "Jason Phillip",
+    "url": "https://tychonai.com/"
+  },
+  "homepage": "https://github.com/jasonphillip/polarfire-agent-skills",
+  "repository": "https://github.com/jasonphillip/polarfire-agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "microchip",
+    "polarfire-soc",
+    "corevectorblox",
+    "v250",
+    "libero",
+    "smarthls",
+    "int8",
+    "fpga"
+  ],
+  "displayName": "PolarFire Agent Skills"
+}

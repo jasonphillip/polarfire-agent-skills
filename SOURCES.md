@@ -1,0 +1,16 @@
+# Source map
+
+The worked source repository is https://github.com/jasonphillip/tychon-quantum-sensing. Paths below are relative to its root. This pack summarizes those files and does not copy source code.
+
+| Skill | Source files |
+|---|---|
+| `vbx-ops-guard` | `workers/odmr-edge-ml/src/odmr_edge_ml/validation/ops_guard.py`; `workers/odmr-edge-ml/src/odmr_edge_ml/validation/tflite_ops.py`; `workers/odmr-edge-ml/README.md`; `workers/odmr-edge-ml/AGENTS.md` |
+| `vbx-export-int8` | `workers/odmr-edge-ml/src/odmr_edge_ml/training/qat.py`; `workers/odmr-edge-ml/src/odmr_edge_ml/training/loop.py`; `workers/odmr-edge-ml/scripts/run_first_train.py`; `workers/odmr-edge-ml/scripts/fix_fcnn_export.py` |
+| `vbx-compile` | `workers/polarfire-hybrid-control/models/README.md`; `workers/polarfire-hybrid-control/AGENTS.md`; `workers/odmr-edge-ml/src/odmr_edge_ml/validation/tflite_ops.py` |
+| `libero-build` | `workers/polarfire-hybrid-control/libero/scripts/00_full_pipeline.tcl`; `workers/polarfire-hybrid-control/libero/scripts/01_scaffold_proj.tcl`; `workers/polarfire-hybrid-control/libero/scripts/02_import_ip.tcl`; `workers/polarfire-hybrid-control/libero/scripts/03_smartdesign.tcl`; `workers/polarfire-hybrid-control/libero/scripts/04_synth_pnr.tcl`; `workers/polarfire-hybrid-control/libero/scripts/05_smartpower_workload.tcl`; `workers/polarfire-hybrid-control/libero/scripts/closure_pipeline.tcl`; `workers/polarfire-hybrid-control/libero/scripts/extract_reports.sh`; `workers/polarfire-hybrid-control/Makefile`; `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`; `workers/polarfire-hybrid-control/README.md`; `workers/polarfire-hybrid-control/docs/workload_smartpower_2026-05-17.md` |
+| `smarthls-fixed-point` | `workers/polarfire-hybrid-control/hls/Makefile`; `workers/polarfire-hybrid-control/hls/src/watchdog.cpp`; `workers/polarfire-hybrid-control/Makefile`; `workers/polarfire-hybrid-control/README.md` |
+| `kit-program` | `workers/polarfire-hybrid-control/libero/scripts/program_kit.tcl`; `workers/polarfire-hybrid-control/libero/scripts/read_idcode.tcl`; `workers/polarfire-hybrid-control/libero/scripts/read_idcode_libero.tcl` |
+| `kit-run-inference` | `workers/polarfire-hybrid-control/firmware/linux/README.md`; `workers/polarfire-hybrid-control/firmware/linux/v250_pid_loop.c`; `workers/polarfire-hybrid-control/docs/v250_pid_loop_2026-06-21.md`; `workers/polarfire-hybrid-control/docs/rung_f_v250_on_silicon_results_2026-06-16.md`; `workers/polarfire-hybrid-control/README.md` |
+| `fabric-watchdog-fallback` | `workers/polarfire-hybrid-control/docs/watchdog_fallback_test_plan.md`; `workers/polarfire-hybrid-control/docs/watchdog_trip_measured_2026-07-01.md`; `workers/polarfire-hybrid-control/hls/src/watchdog.cpp`; `workers/polarfire-hybrid-control/libero/hdl/watchdog_timer.v`; `workers/polarfire-hybrid-control/tools/run_wd_fallback.sh`; `workers/polarfire-hybrid-control/tools/wd_fallback_analyze.py` |
+| `claim-log` | `workers/polarfire-hybrid-control/AGENTS.md`; `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`; `README.md` |
+| `hls4ml-libero-route` | `docs/model-to-v250.md` records the route and explicitly says it was not run. The dates and PR status in this skill also come from the user brief. |

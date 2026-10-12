@@ -1,0 +1,18 @@
+{
+  "name": "polarfire-agent-skills",
+  "version": "2026.10.0",
+  "owner": {
+    "name": "Jason Phillip",
+    "url": "https://tychonai.com/"
+  },
+  "description": "Agent skills for PolarFire SoC V250 inference and fabric control",
+  "plugins": [
+    {
+      "name": "polarfire-agent-skills",
+      "displayName": "PolarFire Agent Skills",
+      "description": "Agent skills for PolarFire SoC V250 inference and fabric control",
+      "version": "2026.10.0",
+      "source": "./"
+    }
+  ]
+}
