@@ -2,30 +2,38 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
-from importlib.resources import files
+import yaml
+from .pipeline import ROOT
 
 
-def ops_table():
-    source = files("pfkit").joinpath("data/ops_2.0.3.md").read_text()
+def ops_table(sdk_root=None):
+    lock = yaml.safe_load((ROOT / "deps.lock").read_text())
+    sdk = next(item for item in lock["repositories"] if item["name"] == "vectorblox-sdk")
+    checkout = Path(sdk_root or os.environ.get("PFKIT_SDK_ROOT") or ROOT / "deps" / sdk["name"])
+    table_path = checkout / "docs" / "OPS.md"
+    if not table_path.is_file():
+        raise FileNotFoundError(f"VectorBlox operator table missing: {table_path}; run 'pfkit deps fetch' or set --sdk-root / PFKIT_SDK_ROOT")
+    source = table_path.read_text()
     return {m.group(1): m.group(2) for line in source.splitlines()
             if (m := re.match(r"^\|([A-Z][A-Z0-9_]*)\|(.*?)\|$", line))}
 
 
-def supported_ops():
-    return set(ops_table())
+def supported_ops(sdk_root=None):
+    return set(ops_table(sdk_root))
 
 
 def _enum_name(enum, value):
     return next((key for key, val in vars(enum).items() if not key.startswith("_") and isinstance(val, int) and val == value), str(value))
 
 
-def inspect_model(path):
+def inspect_model(path, sdk_root=None):
+    table = ops_table(sdk_root)
     from tensorflow.lite.python import schema_py_generated as schema
     model = schema.Model.GetRootAsModel(Path(path).read_bytes(), 0)
     operators, tensors, flags = [], [], []
-    table = ops_table()
     for sg_index in range(model.SubgraphsLength()):
         sg = model.Subgraphs(sg_index)
         tensor_base = len(tensors)

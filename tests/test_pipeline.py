@@ -115,3 +115,20 @@ def test_cli_remote_dry_runs(tmp_path):
         assert completed.returncode == 0, completed.stderr
         assert expected in completed.stdout
         assert "scp " in completed.stdout and "ssh " in completed.stdout
+
+
+def test_inspect_missing_sdk_table(tmp_path):
+    import subprocess
+    import sys
+    root = Path(__file__).resolve().parents[1]
+    sdk_root = tmp_path / "empty-sdk"
+    sdk_root.mkdir()
+    completed = subprocess.run(
+        [sys.executable, "-m", "pfkit", "inspect", str(tmp_path / "model.tflite"),
+         "--sdk-root", str(sdk_root)],
+        cwd=root, text=True, capture_output=True,
+    )
+    assert completed.returncode == 1
+    assert "VectorBlox operator table missing" in completed.stderr
+    assert str(sdk_root / "docs" / "OPS.md") in completed.stderr
+    assert "pfkit deps fetch" in completed.stderr

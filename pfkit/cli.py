@@ -34,6 +34,7 @@ def parser():
     inspect = sub.add_parser("inspect")
     inspect.add_argument("model")
     inspect.add_argument("--run-dir")
+    inspect.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     compile_p = sub.add_parser("compile")
     compile_p.add_argument("model")
     compile_p.add_argument("--output", required=True)
@@ -73,6 +74,7 @@ def parser():
     run.add_argument("--until", choices=("data", "train", "eval", "export", "inspect", "compile", "sim", "infer", "compare"), default="inspect")
     run.add_argument("--run-dir")
     run.add_argument("--full", action="store_true")
+    run.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     return p
 
 
@@ -128,7 +130,7 @@ def _dispatch(args):
         return steps.export(args.example, _run_dir(args))
     if args.command == "inspect":
         from .inspect import inspect_model, print_inspection
-        result = inspect_model(args.model)
+        result = inspect_model(args.model, args.sdk_root)
         print_inspection(result)
         if args.run_dir:
             steps.write_json(Path(args.run_dir) / "inspect.json", result)
@@ -174,7 +176,7 @@ def _dispatch(args):
             elif stage == "export": result = steps.export(args.name, run_dir)
             elif stage == "inspect":
                 from .inspect import inspect_model
-                result = inspect_model(run_dir / "model.tflite")
+                result = inspect_model(run_dir / "model.tflite", args.sdk_root)
                 steps.write_json(run_dir / "inspect.json", result)
                 if result["unsupported"] or result["limit_violations"]: raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}")
             elif stage == "compile":

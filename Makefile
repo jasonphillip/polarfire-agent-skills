@@ -9,4 +9,5 @@ env:
 	touch .venv/.ready
 
 test:
+	.venv/bin/pfkit --help >/dev/null
 	.venv/bin/python -m pytest -q

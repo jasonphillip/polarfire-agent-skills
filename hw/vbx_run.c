@@ -245,11 +245,15 @@ int main(int argc, char **argv)
     }
     model_t *parsed = (model_t *)host_model;
     if (model_check_sanity(parsed) || model_get_data_bytes(parsed) != model_size ||
-        model_get_allocate_bytes(parsed) < model_size ||
-        model_get_size_conf(parsed) != VBX_CNN_SIZE_CONF_V250 ||
+        model_get_allocate_bytes(parsed) < model_size) {
+        fprintf(stderr, "invalid model\n"); goto done;
+    }
+    if (model_get_size_conf(parsed) != VBX_CNN_SIZE_CONF_V250 ||
         model_get_num_inputs(parsed) != 1 || model_get_num_outputs(parsed) == 0 ||
         model_get_num_outputs(parsed) > MAX_IO_BUFFERS - 1) {
-        fprintf(stderr, "invalid model or unsupported IO count\n"); goto done;
+        fprintf(stderr, "unsupported model size or IO count\n");
+        r.code = EXIT_USAGE;
+        goto done;
     }
     size_t allocation = model_get_allocate_bytes(parsed);
     model = vbx_allocate_dma_buffer(vbx, allocation, 0);

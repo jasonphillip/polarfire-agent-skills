@@ -13,6 +13,8 @@ make -C "$KIT_ROOT" test
 ```
 
 `make -C "$KIT_ROOT" env` creates `.venv`, installs the package and pinned workers, writes `.venv/freeze.txt`, then marks `.venv/.ready`.
+It installs `pfkit` in editable mode, including the `.venv/bin/pfkit` console script. `make test` checks that script before pytest.
+`"$KIT_ROOT/.venv/bin/python" -m pfkit` runs the same CLI as `"$KIT_ROOT/.venv/bin/pfkit"`.
 `deps fetch` reads `deps.lock`, checks out each source, and installs both workers in editable mode.
 The dry run prints each command without network access.
 
@@ -31,6 +33,9 @@ Use one run directory for manual stages:
 `train` writes `model.pt` and `training.json`. `eval` writes `eval.json`.
 `export` writes `model.tflite` and `export.manifest.json`.
 `inspect` prints operators and tensors and writes `inspect.json` when given a run directory.
+It reads `docs/OPS.md` from the SDK checkout named in `deps.lock` at run time. The kit does not contain a copy.
+Use `--sdk-root /absolute/path/to/VectorBlox-SDK` on `inspect` or `example run`, or set `PFKIT_SDK_ROOT`.
+If the table is absent, `inspect` reports its path and asks you to run `pfkit deps fetch`.
 `report` writes package versions, revisions, hashes and `summary.md`.
 
 The remote stages use local config files. Set their SSH targets and paths before execution.
