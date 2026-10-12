@@ -1,0 +1,9 @@
+#------------------------------------------------------------------------------------------------------------------------------------------
+# RUN NUMBER: 1   DATE: 18:13:47 12-Oct-2026
+# INVOKED AS: C:/Microchip/Libero_SoC_2025.2/Libero_SoC/Designer/bin/libero.exe extended_run_lib.tcl -skip_open_project -root {<home>\pfkit-build\reference\Vectorblox_FD0AEBB9\designer\Vectorblox_FD0AEBB95776A726D3D} -n 20 -starting_seed_index 1 -compare_criteria violations -analysis max -slack_criteria worst -stop_on_success
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Seed Index  Seed      Maximum Delay        Worst Slack  Report Analyzed                                Saved Design
+# ==========  ========  ===============  ===============  =============================================  ===================================
+           1         0    N/A                        1.049  Vectorblox_FD0AEBB95776A726D3D_timing_violations_max_r1_s1.rpt  Vectorblox_FD0AEBB95776A726D3D_r1_s1
+  The best result Vectorblox_FD0AEBB95776A726D3D_r1_s1 has been saved into the project.
+
