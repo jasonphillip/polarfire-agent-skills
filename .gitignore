@@ -6,3 +6,6 @@ __pycache__/
 libero/work/
 libero/reports/
 watchdog-runs/
+deps/
+.venv/
+reports/*/outputs/
