@@ -1,0 +1,118 @@
+++ git clone -q <home-path> <clean-clone>
+++ cd <clean-clone>
+++ git log --oneline -1
+313411c evidence: both examples through compile and simulator on the tools host, 0 LSB against TFLite
+++ export PATH=<home-path>
+++ PATH=<home-path>
+++ python3.11 --version
+Python 3.11.17
+++ KIT_ROOT=<clean-clone>
+++ make -C <clean-clone> env
+++ grep -v -E 'Requirement already|Collecting|Downloading|Installing collected|Successfully installed|^\s*$'
+++ local _cc_a
+++ for _cc_a in ${1+"$@"}
+++ case "$_cc_a" in
+++ for _cc_a in ${1+"$@"}
+++ case "$_cc_a" in
+++ for _cc_a in ${1+"$@"}
+++ case "$_cc_a" in
+++ local _cc_bin=<home-path>
+++ [[ -x <home-path> ]]
+++ [[ ! -x <home-path> ]]
+++ [[ -n '' ]]
+++ [[ linux-gnu == \m\s\y\s ]]
+++ [[ linux-gnu == \c\y\g\w\i\n ]]
+++ [[ linux-gnu == \w\i\n\3\2 ]]
+++ tail -25
+++ exec -a ugrep <home-path> -G --ignore-files --hidden -I --exclude-dir=.git --exclude-dir=.svn --exclude-dir=.hg --exclude-dir=.bzr --exclude-dir=.jj --exclude-dir=.sl -v -E 'Requirement already|Collecting|Downloading|Installing collected|Successfully installed|^\s*$'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: odmr-edge-ml
+  Building editable for odmr-edge-ml (pyproject.toml): started
+  Building editable for odmr-edge-ml (pyproject.toml): finished with status 'done'
+  Created wheel for odmr-edge-ml: filename=odmr_edge_ml-0.1.0-0.editable-py3-none-any.whl size=5596 sha256=cd8e8ad683625b7c77673f0cdcca2dac54791061dda6574c42e0adbdf33c8f31
+  Stored in directory: /tmp/pip-ephem-wheel-cache-__t1htp0/wheels/e0/b7/93/457c1e19abae599ad311d60ec26a85020a5800c932047f1f8a
+Successfully built odmr-edge-ml
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python -m pip install --upgrade pip
+git clone https://github.com/<user>/tychon-quantum-sensing.git <clean-clone>/deps/tychon-quantum-sensing
+git -C <clean-clone>/deps/tychon-quantum-sensing checkout --detach 646d575
+git clone https://github.com/Microchip-Vectorblox/VectorBlox-SDK.git <clean-clone>/deps/vectorblox-sdk
+git -C <clean-clone>/deps/vectorblox-sdk checkout --detach 4186f9a
+git clone https://github.com/polarfire-soc/icicle-kit-reference-design.git <clean-clone>/deps/icicle-kit-reference-design
+git -C <clean-clone>/deps/icicle-kit-reference-design checkout --detach v2026.04
+<clean-clone>/.venv/bin/python -m pip install -e <clean-clone>/deps/tychon-quantum-sensing/workers/nv-sensor-sim
+<clean-clone>/.venv/bin/python -m pip install -e <clean-clone>/deps/tychon-quantum-sensing/workers/odmr-edge-ml
+.venv/bin/python -m pip freeze > .venv/freeze.txt
+touch .venv/.ready
+make: Leaving directory '<clean-clone>'
+real	0m33.496s
+user	0m25.027s
+sys	0m3.302s
+++ echo ENV_EXIT=0
+ENV_EXIT=0
+++ ls deps
+icicle-kit-reference-design
+tychon-quantum-sensing
+vectorblox-sdk
+++ <clean-clone>/.venv/bin/python -m pfkit example run signal-freq --until inspect --run-dir <clean-clone>/reports/signal-inspect
+++ grep -E '^(data|train|eval|export|inspect):|Error|error'
+++ tail -8
+++ local _cc_a
+++ for _cc_a in ${1+"$@"}
+++ case "$_cc_a" in
+++ for _cc_a in ${1+"$@"}
+++ case "$_cc_a" in
+++ local _cc_bin=<home-path>
+++ [[ -x <home-path> ]]
+++ [[ ! -x <home-path> ]]
+++ [[ -n '' ]]
+++ [[ linux-gnu == \m\s\y\s ]]
+++ [[ linux-gnu == \c\y\g\w\i\n ]]
+++ [[ linux-gnu == \w\i\n\3\2 ]]
+++ exec -a ugrep <home-path> -G --ignore-files --hidden -I --exclude-dir=.git --exclude-dir=.svn --exclude-dir=.hg --exclude-dir=.bzr --exclude-dir=.jj --exclude-dir=.sl -E '^(data|train|eval|export|inspect):|Error|error'
+data: signal-freq
+train: signal-freq
+eval: signal-freq
+export: signal-freq
+inspect: signal-freq
+real	0m2.704s
+user	0m2.267s
+sys	0m0.460s
+++ echo RUN_EXIT=0
+RUN_EXIT=0
+++ cat <clean-clone>/reports/signal-inspect/summary.md
+++ head -12
+# Run summary
+Revisions are in `revisions.json`. Commands and exit codes are in `commands.jsonl`.
+Package versions are in `pip-freeze.txt`. Artifact hashes are in `artifacts.json`.
+- dataset.manifest.json: recorded
+- training.json: recorded
+- eval.json: recorded
+- export.manifest.json: recorded
+- compile.json: not run
+- sim.json: not run
+- infer.json: not run
+++ python3 -c 'import json;d=json.load(open('\''<clean-clone>/reports/signal-inspect/inspect.json'\''));print('\''flags'\'',d.get('\''flags'\''),'\''unsupported'\'',d.get('\''unsupported'\'',[]),'\''ops'\'',[o['\''operator'\''] for o in d['\''operators'\'']])'
+flags ['per-channel quantization tensor 4', 'per-channel quantization tensor 5', 'per-channel quantization tensor 6', 'per-channel quantization tensor 7'] unsupported [] ops ['CONV_2D', 'CONV_2D', 'CONV_2D', 'RESHAPE']
+++ echo '== negatives'
+== negatives
+++ <clean-clone>/.venv/bin/pfkit inspect <clean-clone>/probes/out/c2_shape.tflite
+++ tail -3
+pfkit: [Errno 2] No such file or directory: '<clean-clone>/probes/out/c2_shape.tflite'
+++ echo NEG1_EXIT=0
+NEG1_EXIT=0
+++ PFKIT_SDK_ROOT=/nonexistent
+++ <clean-clone>/.venv/bin/pfkit inspect <clean-clone>/reports/signal-inspect/model.tflite
+++ tail -2
+pfkit: VectorBlox operator table missing: /nonexistent/docs/OPS.md; run 'pfkit deps fetch' or set --sdk-root / PFKIT_SDK_ROOT
+++ echo NEG2_EXIT=0
+NEG2_EXIT=0
+++ <clean-clone>/.venv/bin/python -m pytest -q -x
+++ tail -1
+10 passed, 5 warnings in 5.72s
+exit=0

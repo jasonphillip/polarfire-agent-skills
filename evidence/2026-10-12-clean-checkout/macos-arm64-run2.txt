@@ -1,0 +1,34 @@
+c28adbe Pin torch==2.11.0 without the +cpu local tag so macOS arm64 resolves the PyPI wheel
+Python 3.11.14
+[notice] A new release of pip is available: 26.0 -> 26.2.1
+[notice] To update, run: <clean-clone>/.venv/bin/python -m pip install --upgrade pip
+git clone https://github.com/<user>/tychon-quantum-sensing.git <clean-clone>/deps/tychon-quantum-sensing
+git -C <clean-clone>/deps/tychon-quantum-sensing checkout --detach 646d575
+git clone https://github.com/Microchip-Vectorblox/VectorBlox-SDK.git <clean-clone>/deps/vectorblox-sdk
+git -C <clean-clone>/deps/vectorblox-sdk checkout --detach 4186f9a
+git clone https://github.com/polarfire-soc/icicle-kit-reference-design.git <clean-clone>/deps/icicle-kit-reference-design
+git -C <clean-clone>/deps/icicle-kit-reference-design checkout --detach v2026.04
+<clean-clone>/.venv/bin/python -m pip install -e <clean-clone>/deps/tychon-quantum-sensing/workers/nv-sensor-sim
+<clean-clone>/.venv/bin/python -m pip install -e <clean-clone>/deps/tychon-quantum-sensing/workers/odmr-edge-ml
+.venv/bin/python -m pip freeze > .venv/freeze.txt
+touch .venv/.ready
+ENV_EXIT=0
+make -C "$KIT_ROOT" env 2>&1  22.43s user 6.85s system 63% cpu 45.825 total
+grep -v -E   0.00s user 0.00s system 0% cpu 45.825 total
+tail -12  0.00s user 0.00s system 0% cpu 45.824 total
+icicle-kit-reference-design
+tychon-quantum-sensing
+vectorblox-sdk
+data: signal-freq
+train: signal-freq
+eval: signal-freq
+export: signal-freq
+inspect: signal-freq
+RUN_EXIT=0
+"$KIT_ROOT/.venv/bin/python" -m pfkit example run signal-freq --until inspect  4.14s user 0.79s system 35% cpu 13.884 total
+grep -E "^(data|train|eval|export|inspect):|Error|error"  0.00s user 0.00s system 0% cpu 13.883 total
+tail -8  0.00s user 0.00s system 0% cpu 13.883 total
+flags ['per-channel quantization tensor 4', 'per-channel quantization tensor 5', 'per-channel quantization tensor 6', 'per-channel quantization tensor 7'] unsupported [] ops ['CONV_2D', 'CONV_2D', 'CONV_2D', 'RESHAPE']
+1 failed, 7 passed, 4 warnings in 11.88s
+torch 2.11.0 tf 2.15.1 numpy 1.26.4 macOS-27.0.1-arm64-arm-64bit
+exit=0

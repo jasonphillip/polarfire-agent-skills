@@ -1,0 +1,37 @@
+313411c evidence: both examples through compile and simulator on the tools host, 0 LSB against TFLite
+Python 3.11.14
+/opt/homebrew/bin/python3.11 -m venv .venv
+.venv/bin/python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu -e '.[test,odmr]'
+Looking in indexes: https://pypi.org/simple, https://download.pytorch.org/whl/cpu
+Obtaining file://<clean-clone>
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+INFO: pip is looking at multiple versions of pfkit to determine which version is compatible with other requirements. This could take a while.
+ERROR: Could not find a version that satisfies the requirement torch==2.11.0+cpu (from pfkit) (from versions: 2.0.0, 2.0.1, 2.1.0, 2.1.1, 2.1.2, 2.2.0, 2.2.1, 2.2.2, 2.3.0, 2.3.1, 2.4.0, 2.4.1, 2.5.0, 2.5.1, 2.6.0, 2.7.0, 2.7.1, 2.8.0, 2.9.0, 2.9.1, 2.10.0, 2.11.0, 2.12.0, 2.12.1, 2.13.0, 2.14.0, 2.14.1)
+[notice] A new release of pip is available: 26.0 -> 26.2.1
+[notice] To update, run: <clean-clone>/.venv/bin/python -m pip install --upgrade pip
+ERROR: No matching distribution found for torch==2.11.0+cpu
+make: *** [env] Error 1
+ENV_EXIT=
+make -C "$KIT_ROOT" env 2>&1  1.83s user 0.50s system 70% cpu 3.323 total
+grep -v -E   0.00s user 0.00s system 0% cpu 3.323 total
+tail -20  0.00s user 0.00s system 0% cpu 3.322 total
+ls: deps: No such file or directory
+ModuleNotFoundError: No module named 'numpy'
+RUN_EXIT=
+"$KIT_ROOT/.venv/bin/python" -m pfkit example run signal-freq --until inspect  0.02s user 0.01s system 91% cpu 0.028 total
+grep -E "^(data|train|eval|export|inspect):|Error|error"  0.00s user 0.00s system 4% cpu 0.027 total
+tail -8  0.00s user 0.00s system 3% cpu 0.027 total
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '<clean-clone>/reports/signal-inspect/inspect.json'
+<clean-clone>/.venv/bin/python: No module named pytest
+arm64
+27.0.1
+exit=0
