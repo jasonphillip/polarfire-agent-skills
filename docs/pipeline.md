@@ -17,6 +17,10 @@ It installs `pfkit` in editable mode, including the `.venv/bin/pfkit` console sc
 `"$KIT_ROOT/.venv/bin/python" -m pfkit` runs the same CLI as `"$KIT_ROOT/.venv/bin/pfkit"`.
 `deps fetch` reads `deps.lock`, checks out each source, and installs both workers in editable mode.
 The dry run prints each command without network access.
+For `example run`, pass `--toolshost /absolute/path/to/private-toolshost.yaml` and
+`--kit /absolute/path/to/private-kit.yaml` to use private remote settings.
+These options default to `toolshost.yaml` and `kit.yaml` in the kit checkout.
+`--toolshost` applies to compile and sim; `--kit` applies to infer.
 
 Use one run directory for manual stages:
 

@@ -80,5 +80,10 @@ make -C "$KIT_ROOT" env
 ```
 
 This command shows the intended CLI route.
+The `torch==2.11.0` pin works on both tested platforms. The earlier
+`torch==2.11.0+cpu` pin used a Linux-only local version tag and failed on macOS.
+The `odmr-mlp` example imports the case-study simulator, which imports `simos` and Tk.
+Homebrew Python 3.11 on macOS needs `brew install python-tk@3.11` for that example.
+This Tk fix was not verified in the clean macOS run. `signal-freq` needs neither dependency.
 Read `docs/pipeline.md` for stage outputs and remote configuration.
 Read `docs/hardware.md` before tools host or kit work.

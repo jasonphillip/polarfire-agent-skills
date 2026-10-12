@@ -76,6 +76,8 @@ def parser():
     run.add_argument("name")
     run.add_argument("--until", choices=("data", "train", "eval", "export", "inspect", "compile", "sim", "infer", "compare"), default="inspect")
     run.add_argument("--run-dir")
+    run.add_argument("--toolshost", default=str(ROOT / "toolshost.yaml"), help="tools host config for compile and sim")
+    run.add_argument("--kit", default=str(ROOT / "kit.yaml"), help="kit config for infer")
     run.add_argument("--full", action="store_true")
     run.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     run.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
@@ -188,18 +190,18 @@ def _dispatch(args):
                 if result["unsupported"] or result["limit_violations"] or blocking: raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
             elif stage == "compile":
                 from .remote_ops import compile_plan, run_plan
-                records = run_plan(compile_plan(run_dir / "model.tflite", run_dir / "model.vnnx", ROOT / "toolshost.yaml"))
+                records = run_plan(compile_plan(run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost))
                 steps.write_json(run_dir / "compile.json", {"commands": records, "sha256": steps.sha256(run_dir / "model.vnnx"), "size_bytes": (run_dir / "model.vnnx").stat().st_size})
                 result = None
             elif stage == "sim":
                 from .remote_ops import sim_plan, run_plan
                 _prepare_quantized_input(args.name, run_dir)
-                records = run_plan(sim_plan(run_dir / "model.vnnx", run_dir / "input.int8.npy", run_dir / "sim.npz", ROOT / "toolshost.yaml"))
+                records = run_plan(sim_plan(run_dir / "model.vnnx", run_dir / "input.int8.npy", run_dir / "sim.npz", args.toolshost))
                 steps.write_json(run_dir / "sim.json", {"commands": records, "sha256": steps.sha256(run_dir / "sim.npz")})
                 result = None
             elif stage == "infer":
                 from .remote_ops import infer_plan, run_plan
-                records = run_plan(infer_plan(run_dir / "model.vnnx", run_dir / "input.int8.bin", run_dir / "hw.bin", run_dir / "hw.json", ROOT / "hw" / "vbx_run", ROOT / "kit.yaml", 5000))
+                records = run_plan(infer_plan(run_dir / "model.vnnx", run_dir / "input.int8.bin", run_dir / "hw.bin", run_dir / "hw.json", ROOT / "hw" / "vbx_run", args.kit, 5000))
                 steps.write_json(run_dir / "infer.json", {"commands": records, "sha256": steps.sha256(run_dir / "hw.bin")})
                 result = None
             else:

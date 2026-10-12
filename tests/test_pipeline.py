@@ -40,6 +40,27 @@ def test_compare_math():
     assert compare_arrays(a, b)["tflite_vs_sim"] == "not run"
 
 
+def test_odmr_import_explains_missing_tk(monkeypatch):
+    import builtins
+    import importlib.util
+    import sys
+
+    monkeypatch.setitem(sys.modules, "_tkinter", None)
+    original_import = builtins.__import__
+
+    def missing_tk_import(name, *args, **kwargs):
+        if name == "nv_sensor_sim.pipelines.batch_generate":
+            raise ModuleNotFoundError("No module named '_tkinter'", name="_tkinter")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", missing_tk_import)
+    path = Path(__file__).resolve().parents[1] / "examples" / "odmr-mlp" / "example.py"
+    spec = importlib.util.spec_from_file_location("odmr_missing_tk_test", path)
+    module = importlib.util.module_from_spec(spec)
+    with pytest.raises(ImportError, match="python-tk@3.11"):
+        spec.loader.exec_module(module)
+
+
 def test_remote_dry_runs(tmp_path, capsys):
     from pfkit.remote_ops import compile_plan, sim_plan, infer_plan, run_plan
     root = Path(__file__).resolve().parents[1]

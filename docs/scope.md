@@ -22,8 +22,8 @@ A user can skip that example and still complete the core path.
 
 ## 2. Tested profile and compatible range
 
-The tested profile is VectorBlox SDK `release-v2.0.3` with CoreVectorBlox IP 2.0.1.
-This is the only pairing the kit has run.
+The tools-host validation used VectorBlox SDK `release-v2.0.3` and targeted CoreVectorBlox IP 2.0.1.
+The kit has not run inference on hardware.
 
 Microchip states that any 2.0.x core works with any 2.0.x SDK (VectorBlox SDK issue #27).
 The kit treats 2.0.x as the vendor-stated compatible range.
@@ -71,13 +71,16 @@ The kit pins the orchestration environment as follows.
 | Python | 3.11 | One version that has wheels for both orchestration platforms. |
 | `tensorflow` | 2.15.1 | Its TFLite converter matches the pin on the SDK host. It has Python 3.11 wheels for Linux aarch64 and macOS arm64. |
 | `numpy` | below 2 | TensorFlow 2.15.1 does not combine with NumPy 2. |
-| `torch` | 2.11, CPU build | The public benchmark trains with this version. |
+| `torch` | `2.11.0` | The public benchmark trains with this version. The earlier `2.11.0+cpu` local tag failed on macOS because that tag is Linux-only. |
 
 The public benchmark pins `numpy` 2.4.2. That pin does not combine with TensorFlow 2.15.1.
 For this reason the kit uses its own venv and does not reuse the benchmark environment.
 
 The SDK host pins `tensorflow-cpu` 2.15.1, `numpy` 1.23.5 and `onnx` 1.16.1 on x86.
 The `tensorflow-cpu` package has no wheel for Linux aarch64 or macOS arm64 at 2.15.1. The kit therefore uses `tensorflow`.
+The ODMR example also needs the case-study simulator, `simos`, and Tk.
+With Homebrew Python 3.11 on macOS, install `python-tk@3.11` for ODMR; that fix remains unverified there.
+The `signal-freq` example does not need them.
 
 ## 5. Adaptation targets (untested)
 

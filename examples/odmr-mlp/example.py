@@ -3,7 +3,14 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 import numpy as np
-from nv_sensor_sim.pipelines.batch_generate import generate_dataset
+try:
+    from nv_sensor_sim.pipelines.batch_generate import generate_dataset
+except ImportError as exc:
+    raise ImportError(
+        "odmr-mlp needs the case-study nv_sensor_sim simulator, which imports simos and Tk. "
+        "On macOS with Homebrew Python 3.11, install python-tk@3.11. "
+        "signal-freq needs neither the simulator nor Tk."
+    ) from exc
 from odmr_edge_ml.data.loaders import DatasetLoader
 from odmr_edge_ml.models.mlp import OdmrMLP
 

@@ -66,9 +66,22 @@ Build on the tools host with the SmartHLS glibc RISC-V toolchain. Its Cygwin run
 
 ```bash
 export SHLS=/absolute/path/to/SmartHLS
+export KIT_ROOT=/absolute/path/to/polarfire-agent-skills
+export VBX_SDK=/absolute/path/to/VectorBlox-SDK
 export PATH="$SHLS/swtools/binutils/riscv-gnu-toolchain/bin:$SHLS/dependencies/lib/cygwin:$PATH"
-make -C hw CROSS=riscv64-unknown-linux-gnu- VBX_SDK=/absolute/path/to/VectorBlox-SDK
+riscv64-unknown-linux-gnu-gcc -O2 -std=c11 -Wall -Wextra \
+  -DVBX_SOC_DRIVER -DMSS_DDR -DUSE_INTERRUPTS=0 \
+  -I"$VBX_SDK/drivers/vectorblox" \
+  "$KIT_ROOT/hw/vbx_run.c" \
+  "$VBX_SDK/drivers/vectorblox/vbx_cnn_api.c" \
+  "$VBX_SDK/drivers/vectorblox/vbx_cnn_model.c" \
+  -o "$KIT_ROOT/hw/vbx_run" -lm -lpthread
 ```
+
+The tools host's MSYS shell did not have `make` on `PATH`.
+The direct GCC command above follows `hw/Makefile` and was used for the measured cross-build.
+Alternatively, add SmartHLS `dependencies/mingw64/bin` to `PATH` and run
+`mingw32-make -C "$KIT_ROOT/hw" CROSS=riscv64-unknown-linux-gnu- VBX_SDK="$VBX_SDK"`.
 
 On the kit, `make -C hw native VBX_SDK=/absolute/path/to/VectorBlox-SDK` uses `gcc`. Supply the SDK checkout there if using this target. The output is `hw/vbx_run` for the cross build and `hw/vbx_run.native` for the native build.
 
@@ -92,4 +105,4 @@ The SDK's `vbx_cnn_model_start` contains an internal wait for the START bit to c
 
 The case study ran a `2.0.1` V250 image on silicon and recorded `ERR=0`, version word `0x20000000`, and completed inference. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/README.md:202-205`. Its loaded model's start plus poll had median `32 µs` and p99 `33 µs`. Source: `deps/tychon-quantum-sensing/docs/model-to-v250.md:233-238`.
 
-As of 2026-10-12, this kit's new build script has not run in Libero. Its generated `.job`, timing, and resource reports are unverified. The new overlay has not been applied to its new image. The runner has not been cross compiled with SmartHLS or run on hardware. Its input mismatch, timeout, and multi-output paths have not been exercised on the kit. The case study confirms only `2.0.1` / `PRESET:0` as V250; V500 and V1000 mappings need confirmation. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/docs/rung_f_v250_post_program_handoff_2026-06-16.md:21-33`. These are limits of this kit, not results from the case study.
+As of 2026-10-12, this kit's new build script has not run in Libero. Its generated `.job`, timing, and resource reports are unverified. The new overlay has not been applied to its new image. The runner cross-compiled with SmartHLS GCC 10.2.0; see `evidence/2026-10-12-toolshost/runner-build.txt`. It has not run on hardware. Its input mismatch, timeout, and multi-output paths have not been exercised on the kit. The case study confirms only `2.0.1` / `PRESET:0` as V250; V500 and V1000 mappings need confirmation. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/docs/rung_f_v250_post_program_handoff_2026-06-16.md:21-33`. These are limits of this kit, not results from the case study.
