@@ -23,7 +23,7 @@ A user can skip that example and still complete the core path.
 ## 2. Tested profile and compatible range
 
 The tools-host validation used VectorBlox SDK `release-v2.0.3` and targeted CoreVectorBlox IP 2.0.1.
-The kit has not run inference on hardware.
+The kit ran inference on one Icicle Kit on 2026-10-12 with the case study's image and overlay (see `docs/validation.md`); a bitstream from the kit's own build script is a separate item.
 
 Microchip states that any 2.0.x core works with any 2.0.x SDK (VectorBlox SDK issue #27).
 The kit treats 2.0.x as the vendor-stated compatible range.
@@ -79,7 +79,7 @@ For this reason the kit uses its own venv and does not reuse the benchmark envir
 The SDK host pins `tensorflow-cpu` 2.15.1, `numpy` 1.23.5 and `onnx` 1.16.1 on x86.
 The `tensorflow-cpu` package has no wheel for Linux aarch64 or macOS arm64 at 2.15.1. The kit therefore uses `tensorflow`.
 The ODMR example also needs the case-study simulator, `simos`, and Tk.
-With Homebrew Python 3.11 on macOS, install `python-tk@3.11` for ODMR; that fix remains unverified there.
+With Homebrew Python 3.11 on macOS, install `python-tk@3.11` for ODMR; verified on 2026-10-12 (11 tests pass, ODMR runs through inspect).
 The `signal-freq` example does not need them.
 
 ## 5. Adaptation targets (untested)
