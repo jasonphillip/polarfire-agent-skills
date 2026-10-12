@@ -57,6 +57,15 @@ def sim_plan(model, input_file, output, config):
 
 
 def infer_plan(model, input_file, output, metadata, runner, config, timeout_ms):
+    input_file = Path(input_file)
+    if input_file.suffix == ".npy":
+        import numpy as np
+        samples = np.load(input_file, allow_pickle=False)
+        if samples.dtype != np.int8 or samples.ndim < 2 or samples.shape[0] < 1:
+            raise ValueError("inference input .npy must contain K >= 1 int8 samples")
+        binary = input_file.with_suffix(".bin")
+        np.ascontiguousarray(samples).tofile(binary)
+        input_file = binary
     cfg = load_config(config)
     target, directory = cfg["ssh_target"], cfg["remote_dir"]
     paths = [Path(runner), Path(model), Path(input_file)]

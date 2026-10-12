@@ -201,7 +201,7 @@ def _dispatch(args):
                 result = None
             elif stage == "infer":
                 from .remote_ops import infer_plan, run_plan
-                records = run_plan(infer_plan(run_dir / "model.vnnx", run_dir / "input.int8.bin", run_dir / "hw.bin", run_dir / "hw.json", ROOT / "hw" / "vbx_run", args.kit, 5000))
+                records = run_plan(infer_plan(run_dir / "model.vnnx", run_dir / "input.int8.npy", run_dir / "hw.bin", run_dir / "hw.json", ROOT / "hw" / "vbx_run", args.kit, 5000))
                 steps.write_json(run_dir / "infer.json", {"commands": records, "sha256": steps.sha256(run_dir / "hw.bin")})
                 result = None
             else:

@@ -89,20 +89,30 @@ On the kit, `make -C hw native VBX_SDK=/absolute/path/to/VectorBlox-SDK` uses `g
 hw/vbx_run --model m.vnnx --input in.bin --output out.bin --timeout-ms 1000 --json meta.json --uio-name vbx --repeat 10
 ```
 
-The input file contains already quantized bytes in model input order. The runner accepts a V250 model with one input and one or more INT8 outputs. It checks the input byte count against the model descriptor. It writes concatenated raw INT8 outputs; `meta.json` gives each output's offset and size. It reports input and output counts, element counts, byte counts, dtypes, scales, zero points, the core version register word, SDK graph format version, control and error words, each wall time, and min/median/max. Descriptor APIs are in `deps/vectorblox-sdk/drivers/vectorblox/vbx_cnn_api.h:179-332`. The SDK graph format is in `deps/vectorblox-sdk/drivers/vectorblox/graph_version.h:1-5`. The core version word is word index `10`, as used in `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/vbx_probe.c:39-43`.
+The input file contains K already quantized samples in model input order. Its size must be a positive multiple of the model's input byte count. The runner accepts a V250 model with one input and one or more INT8 outputs. It runs `--repeat` times per sample and writes one concatenated set of outputs per sample. `meta.json` gives each output's offset and size within one sample, `samples`, `sample_wall_ms` grouped by sample, and min/median/max over all completed times. It also reports IO descriptors, the core version register word, SDK graph format version, and control and error words. `pfkit infer --input input.int8.npy` converts an INT8 array with K samples to `input.int8.bin` beside the `.npy` file, then transfers the `.bin`. Descriptor APIs are in `deps/vectorblox-sdk/drivers/vectorblox/vbx_cnn_api.h:179-332`. The SDK graph format is in `deps/vectorblox-sdk/drivers/vectorblox/graph_version.h:1-5`.
+
+The runner reads and validates the model header and IO descriptors, then reads and checks the input size, before calling `vbx_cnn_init`. A V500 model is refused with exit 2 before SDK NPU initialization. The SDK init maps UIO and DMA memory, clears the DMA region, and writes SOFT_RESET then zero to the control register (`deps/vectorblox-sdk/drivers/vectorblox/vbx_cnn_api.c:171-205`).
 
 | Exit | Meaning |
 |---|---|
 | `0` | All requested runs completed; output and metadata written. |
 | `2` | Invalid CLI, unsupported model IO, or input read or size error. A size mismatch prints actual and expected bytes. |
 | `3` | UIO, udmabuf, model load, DMA, or output file failure. |
-| `4` | Wall-clock poll timeout. Metadata retains the NPU control and error words. |
+| `4` | Monotonic operation deadline from immediately before SDK init through the last poll. JSON records the last readable control and error words. |
 | `5` | NPU start, poll, or error-register failure. |
 
-The SDK's `vbx_cnn_model_start` contains an internal wait for the START bit to clear (`deps/vectorblox-sdk/drivers/vectorblox/vbx_cnn_api.c:239-267`). The runner checks READY before calling it. A race or broken register could still stall inside that SDK call. The timeout bounds the poll loop, not a blocked SDK call.
+The SDK's `vbx_cnn_model_start` waits internally for START to clear (`deps/vectorblox-sdk/drivers/vectorblox/vbx_cnn_api.c:239-267`). A watchdog thread ends the process with exit 4 if the deadline passes inside init, model copy, start, or poll. Its emergency JSON has `exit_code`, `control_word`, `npu_error`, and `watchdog: true`. Normal timeout JSON includes the full metadata. A watchdog exit leaves the NPU in an unknown state. Check or reset the kit before another inference.
+
+Run the software failure tests on a Linux host with GCC and this checkout's Python environment:
+
+```bash
+make -C hw test
+```
+
+The test target builds with `VBX_RUN_FAKE_DRIVER=1`. It covers completion, repeated multi-sample output, a stuck poll, a blocked start, error register, init failure, V500 refusal, and invalid input size. The real build does not link fake symbols.
 
 ## Evidence boundary
 
 The case study ran a `2.0.1` V250 image on silicon and recorded `ERR=0`, version word `0x20000000`, and completed inference. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/README.md:202-205`. Its loaded model's start plus poll had median `32 µs` and p99 `33 µs`. Source: `deps/tychon-quantum-sensing/docs/model-to-v250.md:233-238`.
 
-As of 2026-10-12, this kit's new build script has not run in Libero. Its generated `.job`, timing, and resource reports are unverified. The new overlay has not been applied to its new image. The runner cross-compiled with SmartHLS GCC 10.2.0; see `evidence/2026-10-12-toolshost/runner-build.txt`. It has not run on hardware. Its input mismatch, timeout, and multi-output paths have not been exercised on the kit. The case study confirms only `2.0.1` / `PRESET:0` as V250; V500 and V1000 mappings need confirmation. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/docs/rung_f_v250_post_program_handoff_2026-06-16.md:21-33`. These are limits of this kit, not results from the case study.
+As of 2026-10-12, this kit's new build script has not run in Libero. Its generated `.job`, timing, and resource reports are unverified. The new overlay has not been applied to its new image. The previous runner ran on the kit; see `evidence/2026-10-12-hardware/`. This revised watchdog and multi-sample runner has only run against a host fake driver. The case study confirms only `2.0.1` / `PRESET:0` as V250; V500 and V1000 mappings need confirmation. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/docs/rung_f_v250_post_program_handoff_2026-06-16.md:21-33`.

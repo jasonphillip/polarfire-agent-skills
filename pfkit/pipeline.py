@@ -219,12 +219,24 @@ def compare_arrays(float_values, tflite_values, tflite_raw=None, sim_values=None
     return report
 
 
+def load_hardware_outputs(path, shape):
+    raw = np.fromfile(path, dtype=np.int8)
+    expected = int(np.prod(shape))
+    if raw.size != expected:
+        raise ValueError(f"hardware output size mismatch: got {raw.size} bytes, expected {expected}")
+    return raw.reshape(shape)
+
+
 def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
     import tensorflow as tf
     import torch
     cfg, _ = example_module(name)
     parts = load_data(run_dir)
-    x = np.load(inputs) if inputs else parts["test_x"][:1]
+    sim_raw = np.load(sim)["outputs"] if sim else None
+    sample_count = len(sim_raw) if sim_raw is not None else 1
+    x = np.load(inputs) if inputs else parts["test_x"][:sample_count]
+    if len(x) != sample_count and sim_raw is not None:
+        raise ValueError(f"input/simulator sample count mismatch: {len(x)} != {sample_count}")
     if len(x.shape) == len(cfg["input"]["shape"]) - 1:
         x = x[None, ...]
     x = np.asarray(x, dtype=np.float32)
@@ -246,8 +258,7 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
         raw = interpreter.get_tensor(o["index"])
         tflite_raw.append(raw[0]); tflite_float.append((raw[0].astype(np.float32) - o["quantization"][1]) * o["quantization"][0] * cfg["output"]["target_scale"])
     raw = np.asarray(tflite_raw)
-    sim_raw = np.load(sim)["outputs"] if sim else None
-    hw_raw = np.fromfile(hw, dtype=np.int8).reshape(raw.shape) if hw else None
+    hw_raw = load_hardware_outputs(hw, raw.shape) if hw else None
     report = compare_arrays(floated, np.asarray(tflite_float), raw, sim_raw, hw_raw,
                             cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"], lsb_tolerance)
     write_json(Path(run_dir) / "compare.json", report)

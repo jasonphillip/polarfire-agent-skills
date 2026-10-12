@@ -26,7 +26,11 @@ vbx_run: $(THIS_DIR)/vbx_run.c $(VBX_RT)
 native: $(THIS_DIR)/vbx_run.c $(VBX_RT)
 	$(NATIVE_CC) $(FLAGS) $^ -o $(THIS_DIR)/vbx_run.native $(LIBS)
 
-clean:
-	rm -f vbx_run vbx_run.native
+test:
+	@$(NATIVE_CC) $(FLAGS) -Werror -DVBX_RUN_FAKE_DRIVER=1 $(THIS_DIR)/vbx_run.c $(THIS_DIR)/tests/fake_vbx_cnn_api.c -o $(THIS_DIR)/tests/vbx_run.fake $(LIBS)
+	@$(ROOT_DIR)/.venv/bin/python $(THIS_DIR)/tests/test_fake_driver.py $(THIS_DIR)/tests/vbx_run.fake
 
-.PHONY: all native clean
+clean:
+	rm -f vbx_run vbx_run.native tests/vbx_run.fake
+
+.PHONY: all native clean test

@@ -40,6 +40,31 @@ def test_compare_math():
     assert compare_arrays(a, b)["tflite_vs_sim"] == "not run"
 
 
+def test_multi_sample_hardware_compare(tmp_path):
+    from pfkit.pipeline import compare_arrays, load_hardware_outputs
+    sim = np.array([[1, -2, 3], [4, 5, -6], [7, 8, 9]], dtype=np.int8)
+    path = tmp_path / "hw.bin"
+    sim.tofile(path)
+    hardware = load_hardware_outputs(path, sim.shape)
+    report = compare_arrays(None, None, sim_values=sim, hw_values=hardware)
+    assert report["sim_vs_hw"] == {"max_abs_lsb": 0, "tolerance_lsb": 0, "pass": True}
+    assert report["pass"]
+    path.write_bytes(path.read_bytes()[:-1])
+    with pytest.raises(ValueError, match="hardware output size mismatch"):
+        load_hardware_outputs(path, sim.shape)
+
+
+def test_infer_plan_converts_multi_sample_npy(tmp_path):
+    from pfkit.remote_ops import infer_plan
+    path = tmp_path / "input.int8.npy"
+    values = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int8)
+    np.save(path, values)
+    root = Path(__file__).resolve().parents[1]
+    commands = infer_plan("model.vnnx", path, "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
+    assert path.with_suffix(".bin").read_bytes() == values.tobytes()
+    assert str(path.with_suffix(".bin")) in commands[1]
+
+
 def test_odmr_import_explains_missing_tk(monkeypatch):
     import builtins
     import importlib.util
