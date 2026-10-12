@@ -100,7 +100,8 @@ static int preflight(const char *name)
     }
     for (unsigned n = 0; n < 256; n++) {
         snprintf(path, sizeof(path), "/sys/class/uio/uio%u/name", n);
-        if (read_text(path, value, sizeof(value)) || strcmp(value, name)) continue;
+        /* The SDK matches the name prefix (strncmp), so "vbx@60030000" from a generic-uio node also matches. */
+        if (read_text(path, value, sizeof(value)) || strncmp(value, name, strlen(name))) continue;
         snprintf(path, sizeof(path), "/sys/class/uio/uio%u/maps/map0/addr", n);
         if (read_text(path, value, sizeof(value)) || strtoull(value, NULL, 0) != 0x60030000ULL) {
             fprintf(stderr, "first vbx UIO has an unexpected control address\n");
@@ -109,7 +110,7 @@ static int preflight(const char *name)
         snprintf(path, sizeof(path), "/dev/uio%u", n);
         int fd = open(path, O_RDWR);
         if (fd >= 0) { close(fd); found = 1; }
-        break; /* The SDK uses the first literal "vbx" name. */
+        break; /* The SDK uses the first name that starts with "vbx". */
     }
     if (!found) { fprintf(stderr, "vbx UIO control page is unavailable\n"); return -1; }
     int dma_fd = open("/dev/udmabuf-ddr-nc0", O_RDWR);
