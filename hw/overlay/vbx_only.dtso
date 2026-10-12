@@ -1,0 +1,31 @@
+/dts-v1/;
+/plugin/;
+
+/*
+ * Adapted from the Apache-2.0 case study's firmware/linux/two_slot_vbx_pid.dtso.
+ * The PID node is omitted. The V250 control page and interrupt are unchanged.
+ * Apply on the kit at every boot:
+ *   dtc -@ -O dtb -o vbx_only.dtbo vbx_only.dtso \
+ *       -Wno-reg_format -Wno-avoid_default_addr_size
+ *   mkdir -p /sys/kernel/config/device-tree/overlays/vbx_only
+ *   cat vbx_only.dtbo > /sys/kernel/config/device-tree/overlays/vbx_only/dtbo
+ *   # Check /sys/class/uio/uioN/name for "vbx".
+ *
+ * This overlay has not been applied with this kit's new bitstream.
+ * Never map the PID/watchdog window at 0x60040000 or the DMA controller
+ * page at 0x60001000 through this runner's overlay.
+ */
+/ {
+    fragment@0 {
+        target-path = "/";
+        __overlay__ {
+            vbx@60030000 {
+                compatible = "generic-uio";
+                reg = <0x0 0x60030000 0x0 0x1000>;
+                interrupt-parent = <&plic>;
+                interrupts = <124>;
+                status = "okay";
+            };
+        };
+    };
+};

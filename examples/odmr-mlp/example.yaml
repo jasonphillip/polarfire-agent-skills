@@ -1,0 +1,30 @@
+name: odmr-mlp
+module: example.py
+adapter: mlp
+input:
+  shape: [1, 100]
+  layout: NC
+  dtype: float32
+  units: normalized PL intensity
+  normalization: per-spectrum min-max to [0,1]
+output:
+  shape: [1, 1]
+  dtype: float32
+  units: microtesla
+  target_scale: 50.0
+calibration:
+  split: train
+  samples: 64
+  seed: 12345
+tolerances:
+  float_tflite_abs: 5.0
+  tflite_sim_lsb: 1
+default:
+  splits: {train: 300, val: 100, test: 100}
+  epochs: 200
+full:
+  splits: {train: 1000, val: 200, test: 200}
+  epochs: 1000
+data_seed: 12345
+model_seed: 20261009
+learning_rate: 0.01

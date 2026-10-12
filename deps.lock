@@ -1,0 +1,16 @@
+repositories:
+  - name: tychon-quantum-sensing
+    url: https://github.com/jasonphillip/tychon-quantum-sensing.git
+    commit: 646d575
+    licence: Apache-2.0
+    role: ODMR source and editable worker packages
+  - name: vectorblox-sdk
+    url: https://github.com/Microchip-Vectorblox/VectorBlox-SDK.git
+    commit: 4186f9a
+    licence: MIT
+    role: operator table, compiler and simulator reference
+  - name: icicle-kit-reference-design
+    url: https://github.com/polarfire-soc/icicle-kit-reference-design.git
+    commit: v2026.04
+    licence: MIT
+    role: kit hardware reference design

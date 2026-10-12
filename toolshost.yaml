@@ -1,0 +1,6 @@
+ssh_target: tools-host
+command_prefix: wsl --
+venv_activate: ~/vbx-env/bin/activate
+transfer_dir: /c/pfkit-work
+remote_work_dir: /mnt/c/pfkit-work
+size_config: V250

@@ -1,0 +1,30 @@
+name: signal-freq
+module: example.py
+adapter: mlp
+input:
+  shape: [1, 64]
+  layout: NC
+  dtype: float32
+  units: sample amplitude
+  normalization: none
+output:
+  shape: [1, 1]
+  dtype: float32
+  units: hertz
+  target_scale: 10.0
+calibration:
+  split: train
+  samples: 64
+  seed: 451
+tolerances:
+  float_tflite_abs: 2.0
+  tflite_sim_lsb: 1
+default:
+  splits: {train: 512, val: 128, test: 128}
+  epochs: 60
+full:
+  splits: {train: 4096, val: 512, test: 512}
+  epochs: 250
+data_seed: 451
+model_seed: 912
+learning_rate: 0.003

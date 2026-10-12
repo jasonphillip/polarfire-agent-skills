@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pfkit"
+version = "0.1.0"
+description = "Reproducible INT8 model pipeline for PolarFire VectorBlox"
+requires-python = ">=3.11,<3.12"
+license = {text = "Apache-2.0"}
+dependencies = [
+  "torch==2.11.0+cpu", "tensorflow==2.15.1", "numpy==1.26.4",
+  "PyYAML==6.0.3", "h5py==3.16.0",
+]
+
+[project.optional-dependencies]
+odmr = ["scipy==1.17.1", "simos==0.2.3", "qutip==5.2.3"]
+test = ["pytest"]
+
+[project.scripts]
+pfkit = "pfkit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["pfkit*"]
+
+[tool.setuptools.package-data]
+pfkit = ["data/*.md", "remote/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

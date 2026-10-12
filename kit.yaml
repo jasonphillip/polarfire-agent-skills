@@ -1,0 +1,2 @@
+ssh_target: kit
+remote_dir: /tmp/pfkit
