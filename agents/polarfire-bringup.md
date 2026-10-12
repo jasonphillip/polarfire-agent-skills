@@ -1,6 +1,34 @@
+---
+name: polarfire-bringup
+description: Guide model export, fabric build, kit inference, and evidence checks for PolarFire V250 bring-up.
+license: Apache-2.0
+metadata:
+  author: Jason Phillip
+  version: 2026.10.0
+  stage: beta
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+skills:
+  - vbx-ops-guard
+  - vbx-export-int8
+  - vbx-compile
+  - smarthls-fixed-point
+  - libero-build
+  - kit-program
+  - kit-run-inference
+  - fabric-watchdog-fallback
+  - claim-log
+  - hls4ml-libero-route
+---
+
 # PolarFire bring-up agent
 
 Given a model, its representative input, a source checkout, and an approved kit image, run these skills in order. Stop at the first failed acceptance check. Save the command output and exact report path at each step. Never write a measurement that was not read from tool output.
+
+A step that needs the tools host or kit runs over SSH to a host the user names. Never assume a hostname.
 
 | Step | Skill | Acceptance check |
 |---|---|---|

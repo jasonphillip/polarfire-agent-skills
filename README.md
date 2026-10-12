@@ -12,6 +12,28 @@ Agent skills for Microchip PolarFire SoC model deployment and fabric control. Th
 
 Clone this repository locally. Add the clone as a local plugin in Claude Code, Codex, or Cursor. Select `polarfire-bringup` for the complete path, or invoke a skill by name. See `docs/getting-started.md` for the checks before a kit run.
 
+### Install as a plugin
+
+This repository is an agent plugin. A local clone adds all ten skills together. Update the clone to update the pack. Choose one install method so each skill loads once.
+
+Claude Code marketplace install, one step:
+
+```text
+/plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills
+```
+
+Claude Code local clone:
+
+```bash
+claude --plugin-dir /path/to/polarfire-agent-skills
+```
+
+Codex: install the local clone as a plugin. See your client's plugin docs for the command.
+
+Cursor: install the local clone as a plugin. See your client's plugin docs for the command.
+
+The pack was loaded in Claude Code and listed all ten skills on 2026-10-12.
+
 ### Prerequisites
 
 | Item | Required state |

@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -40,8 +40,8 @@ def frontmatter(path: Path) -> dict[str, str]:
     out: dict[str, str] = {}
     section = ""
     for line in lines[1:end]:
-        if line == "metadata:":
-            section = "metadata."
+        if line in ("metadata:", "tools:", "skills:"):
+            section = "metadata." if line == "metadata:" else ""
             continue
         match = re.fullmatch(r"\s*([\w-]+):\s*(.+?)\s*", line)
         if match:
@@ -54,11 +54,11 @@ def source_paths(path: Path) -> list[str]:
 
 
 def files_for_scan(root: Path) -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-        cwd=root, capture_output=True, check=True,
-    )
-    return [root / part.decode() for part in result.stdout.split(b"\0") if part]
+    files: list[Path] = []
+    for directory, subdirs, names in os.walk(root):
+        subdirs[:] = [name for name in subdirs if name not in (".git", "__pycache__")]
+        files.extend(Path(directory) / name for name in names)
+    return files
 
 
 def main() -> int:
@@ -99,6 +99,30 @@ def main() -> int:
             target = (source / item).resolve()
             if not target.is_relative_to(source) or not target.is_file():
                 errors.append(f"{rel}: invalid Source path: {item}")
+        if "## Checks" not in lines or not lines[-1].startswith("- Read "):
+            errors.append(f"{rel}: final Checks section absent")
+        if not 40 <= len(lines) <= 90:
+            errors.append(f"{rel}: expected 40 to 90 lines, found {len(lines)}")
+    agent = root / "agents/polarfire-bringup.md"
+    try:
+        fields = frontmatter(agent)
+    except (OSError, ValueError) as exc:
+        errors.append(f"agents/polarfire-bringup.md: {exc}")
+    else:
+        for key, expected in (("name", "polarfire-bringup"), ("license", "Apache-2.0"),
+                              ("metadata.author", "Jason Phillip"),
+                              ("metadata.version", VERSION), ("metadata.stage", "beta")):
+            if fields.get(key) != expected:
+                errors.append(f"agents/polarfire-bringup.md: {key} differs")
+        agent_text = agent.read_text(encoding="utf-8")
+        for section, expected in (("tools", ("Read", "Grep", "Glob", "Bash")),
+                                  ("skills", tuple(skill.parent.name for skill in skills))):
+            match = re.search(rf"(?m)^{section}:\n((?:  - [^\n]+\n)+)", agent_text)
+            values = re.findall(r"(?m)^  - ([^\n]+)$", match.group(1)) if match else []
+            if set(values) != set(expected) or len(values) != len(expected):
+                errors.append(f"agents/polarfire-bringup.md: {section} list differs")
+        if not fields.get("description"):
+            errors.append("agents/polarfire-bringup.md: description absent")
     for item in JSON_FILES:
         path = root / item
         if not path.is_file():

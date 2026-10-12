@@ -20,10 +20,30 @@ Source: `workers/polarfire-hybrid-control/AGENTS.md`
 Audit a copied Libero report directory in strict mode.
 
 ```bash
-python3 tools/audit_libero_reports.py --strict $(REPORT_DIRS)
+python3 tools/audit_libero_reports.py --strict <report-dir>
 ```
 Source: `workers/polarfire-hybrid-control/Makefile`
+
+`<report-dir>` replaces the Makefile variable `$(REPORT_DIRS)`. Supply the report directory under review.
 
 The audit checks positive slack, retained PID hierarchy and resources, and critical pruning markers. Record its output and exit code. Do not call a missing or unparseable bundle a pass.
 
 Source: `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`
+
+Keep one row per measured result. Name the model, bitstream, kit run, and source report in each row.
+
+Source: `workers/polarfire-hybrid-control/AGENTS.md`
+
+Mark software simulation, synthesis, and kit output as separate evidence classes. Do not merge their limits.
+
+Source: `docs/model-to-v250.md`
+
+Keep failed checks in the log. A missing or unparseable report remains an unresolved result.
+
+Source: `workers/polarfire-hybrid-control/tools/audit_libero_reports.py`
+
+## Checks
+
+- Read a primary report path beside every result row.
+- Read the command, tool version, input hash, and exit code beside each row.
+- Read a successful strict audit result before reporting timing closure.

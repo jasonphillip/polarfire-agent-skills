@@ -14,3 +14,7 @@
 A programming step changes persistent hardware state. Get operator approval for the exact image first. Stop on a failed check. Do not infer a measured result from an earlier report or from a different board.
 
 The source commands assume a checkout of the source repository. The skill files name their source directly below each command. Replace model filenames only after checking the target script's inputs.
+
+Tutorial: https://github.com/jasonphillip/tychon-quantum-sensing/blob/main/docs/model-to-v250.md
+
+Local source: `docs/model-to-v250.md` in the source checkout.

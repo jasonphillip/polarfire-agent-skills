@@ -29,3 +29,22 @@ Source: `workers/polarfire-hybrid-control/docs/watchdog_fallback_test_plan.md`
 The SmartHLS C++ watchdog is a design reference. The deployed fabric timer is the RTL module.
 
 Source: `workers/polarfire-hybrid-control/hls/src/watchdog.cpp`
+
+Do not infer actuator fallback from the timeout flag alone. Read the actuator output after transfer to PID-only mode.
+
+Source: `workers/polarfire-hybrid-control/docs/watchdog_fallback_test_plan.md`
+
+Keep the observer and control timestamps aligned. Record gaps in either stream before computing trip timing.
+
+Source: `workers/polarfire-hybrid-control/docs/watchdog_trip_measured_2026-07-01.md`
+
+Name the loaded image and source input beside each raw CSV. Treat a replay as a replay result.
+
+Source: `workers/polarfire-hybrid-control/tools/run_wd_fallback.sh`
+
+## Checks
+
+- Read a clear and later trip timestamp from the CSR observer output.
+- Read poll gaps and the trip interval from the timing report.
+- Read a PID-only actuator update from paired raw CSV output.
+- Read recovery behavior and image identity from the run record.
