@@ -21,7 +21,7 @@ See `evidence/2026-10-12-agent-clients/claude-code.md` and
 
 ## Claude Code
 
-Once this repository is public, install it from the marketplace:
+The repository is public (since 2026-10-12). Install it from the marketplace:
 
 ```text
 /plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills
