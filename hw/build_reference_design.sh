@@ -28,14 +28,33 @@ cp -a "$source_dir/." "$WORK_DIR/reference/"
 component="$WORK_DIR/reference/script_support/additional_configurations/Vectorblox/components/core_vectorblox_C0.tcl"
 tclsh "$script_dir/pin_vectorblox.tcl" "$component" "$CORE_VERSION" "$VBX_SIZE"
 
+# The reference design asks the IP catalog for ":*" (latest) versions of its DirectCore
+# and SgCore blocks. A newer catalog can ship a core whose parameters no longer match
+# the v2026.04 component scripts (seen with COREAXI4INTERCONNECT 3.0.130: parameter
+# DWC_ADDR_FIFO_DEPTH_CEILING not found). PIN_VLNV pins named cores to the versions the
+# case study built with; it is a comma-separated list of VENDOR:LIB:NAME=VERSION.
+PIN_VLNV=${PIN_VLNV:-Actel:DirectCore:COREAXI4INTERCONNECT=2.9.100}
+IFS=',' read -r -a pins <<< "$PIN_VLNV"
+for pin in "${pins[@]}"; do
+    [[ -n "$pin" ]] || continue
+    vlnv=${pin%%=*}; ver=${pin#*=}
+    [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad PIN_VLNV entry: $pin" >&2; exit 2; }
+    count=$(grep -rl "core_vlnv {${vlnv}:\*}" "$WORK_DIR/reference" | wc -l)
+    grep -rl "core_vlnv {${vlnv}:\*}" "$WORK_DIR/reference" | xargs -r sed -i "s#core_vlnv {${vlnv}:\*}#core_vlnv {${vlnv}:${ver}}#g"
+    echo "pinned ${vlnv} to ${ver} in ${count} file(s)"
+done
+
 # The reference README names VERIFY_TIMING and EXPORT_FPE:PATH. Both are needed:
 # VERIFY_TIMING runs timing; EXPORT_FPE emits a programming job without PROGRAM.
 # The reference Tcl may invoke git for a project label; no git is run by this wrapper.
+# On an MSYS shell (Windows Libero) the Libero arguments need Windows-style paths.
+libero_work="$WORK_DIR"
+if command -v cygpath >/dev/null 2>&1; then libero_work=$(cygpath -m "$WORK_DIR"); fi
 (
     cd "$WORK_DIR/reference"
     "$LIBERO" "SCRIPT:MPFS_ICICLE_KIT_REFERENCE_DESIGN.tcl" \
-        "SCRIPT_ARGS:VECTORBLOX+${DEVICE}+VERIFY_TIMING+EXPORT_FPE:${WORK_DIR}/reports" \
-        "LOGFILE:${WORK_DIR}/reports/libero.log"
+        "SCRIPT_ARGS:VECTORBLOX+${DEVICE}+VERIFY_TIMING+EXPORT_FPE:${libero_work}/reports" \
+        "LOGFILE:${libero_work}/reports/libero.log"
 )
 
 # Keep the native reports and job together. Report names vary by Libero release.

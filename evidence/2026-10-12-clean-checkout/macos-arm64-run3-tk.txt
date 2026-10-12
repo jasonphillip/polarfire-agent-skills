@@ -1,0 +1,16 @@
+Removing: <home>/Library/Logs/Homebrew/ca-certificates... (64B)
+Removing: <home>/Library/Logs/Homebrew/tmux... (64B)
+Removing: <home>/Library/Logs/Homebrew/fzf... (64B)
+brew exit=0
+_tkinter ok
+af9f4d5 evidence: hardware runs on the Icicle Kit, both examples 0 LSB against the simulator; negatives
+[notice] To update, run: <clean-clone>/.venv/bin/python -m pip install --upgrade pip
+venv _tkinter ok
+11 passed, 5 warnings in 12.58s
+data: odmr-mlp
+train: odmr-mlp
+eval: odmr-mlp
+export: odmr-mlp
+inspect: odmr-mlp
+odmr exit=0
+exit=0
