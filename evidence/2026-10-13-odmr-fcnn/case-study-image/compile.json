@@ -1,0 +1,93 @@
+{
+  "attempt_id": "20261013-160419-408a6ea5",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "mkdir -p pfkit-work/20261013-160419-408a6ea5"
+      ],
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work/20261013-160419-408a6ea5'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:27.051219+00:00",
+      "started_utc": "2026-10-13T16:04:26.810891+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "reports/20261013-120419-odmr-fcnn-casestudy/model.tflite",
+        "<tools-host>:pfkit-work/20261013-160419-408a6ea5/model.tflite"
+      ],
+      "command": "scp reports/20261013-120419-odmr-fcnn-casestudy/model.tflite <tools-host>:pfkit-work/20261013-160419-408a6ea5/model.tflite",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:27.312740+00:00",
+      "started_utc": "2026-10-13T16:04:27.051907+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "wsl.exe -d Ubuntu -- bash -lc 'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-160419-408a6ea5 && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/20261013-160419-408a6ea5/model.tflite -o <tools-host-home>/pfkit-work/20261013-160419-408a6ea5/model.vnnx'"
+      ],
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-160419-408a6ea5 && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/20261013-160419-408a6ea5/model.tflite -o <tools-host-home>/pfkit-work/20261013-160419-408a6ea5/model.vnnx'\"'\"''",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:33.396653+00:00",
+      "started_utc": "2026-10-13T16:04:27.313796+00:00",
+      "stderr": "2026-10-13 12:04:29.859420: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.\n2026-10-13 12:04:30.128145: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nINFO: Created TensorFlow Lite XNNPACK delegate for CPU.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<tools-host>:pfkit-work/20261013-160419-408a6ea5/model.vnnx",
+        "reports/20261013-120419-odmr-fcnn-casestudy/model.vnnx"
+      ],
+      "command": "scp <tools-host>:pfkit-work/20261013-160419-408a6ea5/model.vnnx reports/20261013-120419-odmr-fcnn-casestudy/model.vnnx",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:33.645371+00:00",
+      "started_utc": "2026-10-13T16:04:33.397132+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/toolshost.yaml",
+    "values": {
+      "command_prefix": "wsl.exe -d Ubuntu --",
+      "remote_work_dir": "<tools-host-home>/pfkit-work",
+      "size_config": "V250",
+      "ssh_target": "<tools-host>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      },
+      "transfer_dir": "pfkit-work",
+      "venv_activate": "~/vbx-env/bin/activate"
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "c02cbc0fc826a5f67a6f092b176fb6d56dca01bd3a8abcea7f2c00665f3c7b8f",
+    "payload_sha256": null
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-120419-odmr-fcnn-casestudy/model.vnnx",
+    "sha256": "d294dce6aedb20eee0f3d2d245bb8d03933c7608330ae12f46eaf34b582d092b",
+    "size_bytes": 13488
+  },
+  "status": "completed"
+}

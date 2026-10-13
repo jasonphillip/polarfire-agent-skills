@@ -1,0 +1,109 @@
+{
+  "attempt_id": "20261013-160419-408a6ea5",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "mkdir -p /tmp/pfkit/20261013-160419-408a6ea5"
+      ],
+      "command": "ssh root@<kit> 'mkdir -p /tmp/pfkit/20261013-160419-408a6ea5'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:42.003845+00:00",
+      "started_utc": "2026-10-13T16:04:41.209150+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<kit-root>/hw/vbx_run",
+        "reports/20261013-120419-odmr-fcnn-casestudy/model.vnnx",
+        "reports/20261013-120419-odmr-fcnn-casestudy/input.int8.bin",
+        "root@<kit>:/tmp/pfkit/20261013-160419-408a6ea5/"
+      ],
+      "command": "scp <kit-root>/hw/vbx_run reports/20261013-120419-odmr-fcnn-casestudy/model.vnnx reports/20261013-120419-odmr-fcnn-casestudy/input.int8.bin root@<kit>:/tmp/pfkit/20261013-160419-408a6ea5/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:42.850571+00:00",
+      "started_utc": "2026-10-13T16:04:42.004652+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "/tmp/pfkit/20261013-160419-408a6ea5/vbx_run --model /tmp/pfkit/20261013-160419-408a6ea5/model.vnnx --input /tmp/pfkit/20261013-160419-408a6ea5/input.int8.bin --output /tmp/pfkit/20261013-160419-408a6ea5/hw.bin --timeout-ms 5000 --json /tmp/pfkit/20261013-160419-408a6ea5/hw.json"
+      ],
+      "command": "ssh root@<kit> '/tmp/pfkit/20261013-160419-408a6ea5/vbx_run --model /tmp/pfkit/20261013-160419-408a6ea5/model.vnnx --input /tmp/pfkit/20261013-160419-408a6ea5/input.int8.bin --output /tmp/pfkit/20261013-160419-408a6ea5/hw.bin --timeout-ms 5000 --json /tmp/pfkit/20261013-160419-408a6ea5/hw.json'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:44.422242+00:00",
+      "started_utc": "2026-10-13T16:04:42.851471+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/20261013-160419-408a6ea5/hw.bin",
+        "reports/20261013-120419-odmr-fcnn-casestudy/hw.bin"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/20261013-160419-408a6ea5/hw.bin reports/20261013-120419-odmr-fcnn-casestudy/hw.bin",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:45.217359+00:00",
+      "started_utc": "2026-10-13T16:04:44.423290+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/20261013-160419-408a6ea5/hw.json",
+        "reports/20261013-120419-odmr-fcnn-casestudy/hw.json"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/20261013-160419-408a6ea5/hw.json reports/20261013-120419-odmr-fcnn-casestudy/hw.json",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:04:46.032733+00:00",
+      "started_utc": "2026-10-13T16:04:45.218603+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/kit.yaml",
+    "values": {
+      "remote_dir": "/tmp/pfkit",
+      "ssh_target": "root@<kit>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      }
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "d294dce6aedb20eee0f3d2d245bb8d03933c7608330ae12f46eaf34b582d092b",
+    "payload_sha256": "85f113c7d5d3145634538586f2bf9a1db06eeff7d55b34ced457b4ba82f1b23a",
+    "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-120419-odmr-fcnn-casestudy/hw.bin",
+    "sha256": "0d7e5873b238637ae2b8408dc8779824527360c678f6b473467a593cc80d7166",
+    "size_bytes": 64
+  },
+  "payload_sha256": "85f113c7d5d3145634538586f2bf9a1db06eeff7d55b34ced457b4ba82f1b23a",
+  "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771",
+  "status": "completed"
+}

@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "example",
+    "run",
+    "odmr-fcnn",
+    "--until",
+    "compare",
+    "--samples",
+    "64",
+    "--toolshost",
+    "<config>/toolshost.yaml",
+    "--kit",
+    "<config>/kit.yaml",
+    "--run-dir",
+    "reports/20261013-120419-odmr-fcnn-casestudy"
+  ],
+  "attempt_id": "20261013-160419-408a6ea5",
+  "dirty": true,
+  "kit_revision": "0a659e9cb07ca4f3e2021575b7395c1be70fd9b0",
+  "started_utc": "2026-10-13T16:04:19.143170+00:00",
+  "worktree": false
+}
