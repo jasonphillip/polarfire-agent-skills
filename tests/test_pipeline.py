@@ -35,9 +35,11 @@ def test_compare_math():
     same = np.array([[10, -2]], dtype=np.int8)
     close = np.array([[11, -2]], dtype=np.int8)
     report = compare_arrays(a, b, raw, same, same, 0.3, 1, 0)
-    assert report["pass"] and report["sim_vs_hw"]["max_abs_lsb"] == 0
+    assert report["pass"] and report["complete"]
+    assert report["sim_vs_hw"]["status"] == "passed"
+    assert report["sim_vs_hw"]["max_abs_lsb"] == 0
     assert not compare_arrays(a, b, raw, same, close, 0.3, 1, 0)["pass"]
-    assert compare_arrays(a, b)["tflite_vs_sim"] == "not run"
+    assert compare_arrays(a, b)["tflite_vs_sim"] == {"status": "not run"}
 
 
 def test_multi_sample_hardware_compare(tmp_path):
@@ -46,9 +48,12 @@ def test_multi_sample_hardware_compare(tmp_path):
     path = tmp_path / "hw.bin"
     sim.tofile(path)
     hardware = load_hardware_outputs(path, sim.shape)
-    report = compare_arrays(None, None, sim_values=sim, hw_values=hardware)
-    assert report["sim_vs_hw"] == {"max_abs_lsb": 0, "tolerance_lsb": 0, "pass": True}
+    report = compare_arrays(None, None, sim_values=sim, hw_values=hardware,
+                            required=("sim_vs_hw",))
+    assert report["sim_vs_hw"] == {"status": "passed", "max_abs_lsb": 0,
+                                    "tolerance_lsb": 0, "exact": True, "pass": True}
     assert report["pass"]
+    assert report["complete"] is False
     path.write_bytes(path.read_bytes()[:-1])
     with pytest.raises(ValueError, match="hardware output size mismatch"):
         load_hardware_outputs(path, sim.shape)

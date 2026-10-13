@@ -68,6 +68,7 @@ def parser():
     compare.add_argument("--sim")
     compare.add_argument("--hw")
     compare.add_argument("--lsb-tolerance", type=int, default=0)
+    compare.add_argument("--scope", choices=("requested", "full"), default="requested")
     report = sub.add_parser("report")
     report.add_argument("--run-dir", required=True)
     example = sub.add_parser("example")
@@ -163,9 +164,11 @@ def _dispatch(args):
             write_json(Path(args.run_dir) / f"{args.command}.json", result)
         return None
     if args.command == "compare":
-        result = steps.compare(args.example, args.run_dir, args.inputs, args.sim, args.hw, args.lsb_tolerance)
+        result = steps.compare(args.example, args.run_dir, args.inputs, args.sim, args.hw,
+                               args.lsb_tolerance, scope=args.scope)
         if not result["pass"]:
-            raise ValueError("Comparison tolerance violated")
+            raise ValueError(f"Comparison {result['status']}: failed={result['checks_failed']} "
+                             f"missing={[name for name in result['required'] if name not in result['checks_run']]}")
         return result
     if args.command == "report":
         from .reporting import report
@@ -205,8 +208,11 @@ def _dispatch(args):
                 steps.write_json(run_dir / "infer.json", {"commands": records, "sha256": steps.sha256(run_dir / "hw.bin")})
                 result = None
             else:
-                result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz", hw=run_dir / "hw.bin")
-                if not result["pass"]: raise ValueError("Comparison tolerance violated")
+                result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz",
+                                       hw=run_dir / "hw.bin", scope="full")
+                if not result["pass"]:
+                    raise ValueError(f"Comparison {result['status']}: failed={result['checks_failed']} "
+                                     f"missing={[name for name in result['required'] if name not in result['checks_run']]}")
             if result is not None: print(json.dumps(result, sort_keys=True)[:500])
             append_log(run_dir, f"pfkit {stage} {args.name} --run-dir {run_dir}", 0)
         print(report(run_dir))

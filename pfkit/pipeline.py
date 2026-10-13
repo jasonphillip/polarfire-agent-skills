@@ -195,27 +195,51 @@ def export(name, run_dir, form="conv1x1"):
     return manifest
 
 
+CHECKS = ("float_vs_tflite", "tflite_vs_sim", "sim_vs_hw")
+
+
+def _validate_pair(left, right, label, integer):
+    left, right = np.asarray(left), np.asarray(right)
+    if left.size == 0 or right.size == 0:
+        raise ValueError(f"{label}: empty array")
+    if left.shape != right.shape:
+        raise ValueError(f"{label} shape mismatch: {left.shape} != {right.shape}")
+    for name, value in (("left", left), ("right", right)):
+        if integer:
+            if value.dtype != np.int8:
+                raise ValueError(f"{label} {name}: expected int8 raw outputs, got {value.dtype}")
+        elif not np.issubdtype(value.dtype, np.floating) or not np.all(np.isfinite(value)):
+            raise ValueError(f"{label} {name}: expected finite float values")
+    return left, right
+
+
 def compare_arrays(float_values, tflite_values, tflite_raw=None, sim_values=None, hw_values=None,
-                   float_tolerance=1.0, sim_tolerance=1, hw_tolerance=0):
-    report = {"float_vs_tflite": "not run", "tflite_vs_sim": "not run", "sim_vs_hw": "not run", "pass": True}
-    for left, right, label in ((float_values, tflite_values, "float/TFLite"), (tflite_raw, sim_values, "TFLite/simulator"), (sim_values, hw_values, "simulator/hardware")):
-        if left is not None and right is not None and np.shape(left) != np.shape(right):
-            raise ValueError(f"{label} shape mismatch: {np.shape(left)} != {np.shape(right)}")
-    if float_values is not None and tflite_values is not None:
-        delta = float(np.max(np.abs(np.asarray(float_values) - np.asarray(tflite_values))))
-        ok = delta <= float_tolerance
-        report["float_vs_tflite"] = {"max_abs": delta, "tolerance": float_tolerance, "pass": ok}
-        report["pass"] &= ok
-    if sim_values is not None and tflite_raw is not None:
-        delta = int(np.max(np.abs(np.asarray(tflite_raw, dtype=np.int16) - np.asarray(sim_values, dtype=np.int16))))
-        ok = delta <= sim_tolerance
-        report["tflite_vs_sim"] = {"max_abs_lsb": delta, "tolerance_lsb": sim_tolerance, "pass": ok}
-        report["pass"] &= ok
-    if hw_values is not None and sim_values is not None:
-        delta = int(np.max(np.abs(np.asarray(sim_values, dtype=np.int16) - np.asarray(hw_values, dtype=np.int16))))
-        ok = delta <= hw_tolerance
-        report["sim_vs_hw"] = {"max_abs_lsb": delta, "tolerance_lsb": hw_tolerance, "pass": ok}
-        report["pass"] &= ok
+                   float_tolerance=1.0, sim_tolerance=1, hw_tolerance=0,
+                   required=("float_vs_tflite",)):
+    pairs = {
+        "float_vs_tflite": (float_values, tflite_values, False, float_tolerance, "max_abs", "tolerance"),
+        "tflite_vs_sim": (tflite_raw, sim_values, True, sim_tolerance, "max_abs_lsb", "tolerance_lsb"),
+        "sim_vs_hw": (sim_values, hw_values, True, hw_tolerance, "max_abs_lsb", "tolerance_lsb"),
+    }
+    report = {name: {"status": "not run"} for name in CHECKS}
+    for name, (left, right, integer, tolerance, key, tol_key) in pairs.items():
+        if left is None or right is None:
+            continue
+        left, right = _validate_pair(left, right, name, integer)
+        delta = (np.max(np.abs(left.astype(np.int16) - right.astype(np.int16))) if integer
+                 else np.max(np.abs(left - right)))
+        delta = int(delta) if integer else float(delta)
+        ok = delta <= tolerance
+        report[name] = {"status": "passed" if ok else "failed", key: delta, tol_key: tolerance,
+                        "exact": delta == 0, "pass": ok}
+    run = [name for name in CHECKS if report[name]["status"] != "not run"]
+    failed = [name for name in run if report[name]["status"] == "failed"]
+    missing = [name for name in required if name not in run]
+    status = "no_evidence" if not run else "failed" if failed else "incomplete" if missing else "passed"
+    report.update({"checks_run": run, "checks_passed": [name for name in run if name not in failed],
+                   "checks_failed": failed, "checks_not_run": [name for name in CHECKS if name not in run],
+                   "required": list(required), "complete": len(run) == len(CHECKS),
+                   "status": status, "pass": status == "passed"})
     return report
 
 
@@ -227,7 +251,9 @@ def load_hardware_outputs(path, shape):
     return raw.reshape(shape)
 
 
-def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
+def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scope="requested"):
+    if scope not in ("requested", "full"):
+        raise ValueError(f"Unknown comparison scope: {scope}")
     import tensorflow as tf
     import torch
     cfg, _ = example_module(name)
@@ -259,7 +285,12 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
         tflite_raw.append(raw[0]); tflite_float.append((raw[0].astype(np.float32) - o["quantization"][1]) * o["quantization"][0] * cfg["output"]["target_scale"])
     raw = np.asarray(tflite_raw)
     hw_raw = load_hardware_outputs(hw, raw.shape) if hw else None
+    required = (CHECKS if scope == "full" else
+                tuple(name for name, present in (("float_vs_tflite", True),
+                                                  ("tflite_vs_sim", sim is not None),
+                                                  ("sim_vs_hw", hw is not None)) if present))
     report = compare_arrays(floated, np.asarray(tflite_float), raw, sim_raw, hw_raw,
-                            cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"], lsb_tolerance)
+                            cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"],
+                            lsb_tolerance, required=required)
     write_json(Path(run_dir) / "compare.json", report)
     return report

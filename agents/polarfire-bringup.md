@@ -74,7 +74,7 @@ Stop at a failed gate and keep its output.
 | compile | `RUN_DIR/compile.json` | Remote command passed and VNNX recorded. |
 | sim | `RUN_DIR/sim.json` | Simulator output recorded. |
 | infer | `RUN_DIR/infer.json` and `RUN_DIR/hw.json` | Kit output and runner metadata recorded. |
-| compare | `RUN_DIR/compare.json` | All supplied comparisons pass stated bounds. |
+| compare | `RUN_DIR/compare.json` | `status` is `passed`. For a full deployment check, `complete` is also true. `incomplete`, `no_evidence`, `failed` and `stale` are not passes. `exact` false means within tolerance, not equal. |
 
 Use `claim-log` to summarize the run.
 Never write a number not read from tool output.
