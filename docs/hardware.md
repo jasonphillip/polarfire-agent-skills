@@ -130,6 +130,7 @@ The 64-sample batch used hardened runner commit `5fe1239` and recorded
 and `vbx_cnn_model_start` until `vbx_cnn_model_poll` returns 0. It excludes
 the input copy into the DMA buffer, the output write, process start and any
 sensor or actuator path. It is a sample of a quiet board, not a worst-case
-bound. The new 64-sample CLI route has not run on the kit.
+bound. The 64-sample CLI route passed on the kit for both examples; its runner
+timings are also quiet-board samples (`evidence/2026-10-13-hardware-cli-route/README.md`).
 
 On 2026-10-12 the kit's build script ran in Libero SoC 2025.2 on the tools host: exit 0 in 40 min 25 s, timing met (0 violations, worst slack 1.049 ns), job exported (sha256 6d5cae6c...), generated CoreVectorBlox 2.0.1 PRESET 0 (`evidence/2026-10-12-libero-build/`). The exported image has not been programmed onto a kit, and the kit's overlay has not been applied to it; both remain unverified on hardware.

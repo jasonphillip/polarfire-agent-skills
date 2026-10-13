@@ -11,7 +11,7 @@ These versions are recorded in the client evidence.
 
 | Client | Recorded version | Local check |
 |---|---|---|
-| Claude Code | 2.1.296 | Local plugin workflow reached inspect with exit 0. |
+| Claude Code | 2.1.296 | The 2026-10-12 local plugin workflow reached inspect with exit 0. |
 | Codex CLI | 0.157.1 | Direct use of checkout skill files reached inspect with exit 0. Plugin install not tested. |
 | Cursor | Not installed in the client inventory. | Manifest present; loading not tested. |
 
@@ -47,10 +47,15 @@ The recorded Claude Code workflow used a local plugin on a clean clone:
 - Installation: the marketplace install and uninstall above succeeded.
 - Skill loading: `dataset-and-training` and `polarfire-bringup` loaded locally.
 - Local execution: `signal-freq` reached inspect with exit 0 and reported operators, flags, and eval MAE.
-- Remote execution: compile, simulation, and kit inference were not run through this client workflow.
+- Remote execution: the 2026-10-12 client workflow stopped at inspect.
 
-The recorded Claude Code and Codex workflows reached inspect. No assistant-driven
-compile, simulation, or kit run is recorded in the 2026-10-12 client evidence.
+On 2026-10-13, headless Claude Code with only this local plugin ran `signal-freq`
+through `example run --until compare --samples 64` on the tools host and kit.
+It loaded `kit-run-inference` and `claim-log`; compare passed, complete, with
+0 LSB simulator versus hardware difference. This was one assistant, one example,
+and one run. It did not invoke `polarfire-bringup` as a subagent
+(`evidence/2026-10-13-assistant-run/README.md`). Codex and Cursor remote
+workflows remain untested.
 
 ## Codex CLI
 

@@ -55,4 +55,6 @@ For a fresh held-out batch, configure the tools host and kit, then run:
 "$KIT_ROOT/.venv/bin/python" -m pfkit example run signal-freq --until compare --samples 64 --toolshost "$KIT_ROOT/toolshost.yaml" --kit "$KIT_ROOT/kit.yaml" --run-dir "$KIT_ROOT/reports/signal-batch64"
 ```
 
-This CLI route has local tests. Its 64-sample hardware run is not recorded here.
+This 64-sample CLI route passed on the case-study kit image for `signal-freq`
+and `odmr-mlp`, with complete comparisons and 0 LSB simulator versus hardware
+difference (`evidence/2026-10-13-hardware-cli-route/README.md`).

@@ -24,7 +24,9 @@ These options default to `toolshost.yaml` and `kit.yaml` in the kit checkout.
 `example run signal-freq --until compare --samples 64` selects the same 64
 held-out inputs for simulation, inference and comparison. The default is a
 labeled one-sample fast path. `--selection random --seed N` records a
-repeatable alternative. This new 64-sample CLI route has not run on the kit.
+repeatable alternative. The 64-sample CLI route passed on the kit for both
+examples, including a run with a space in the kit remote directory
+(`evidence/2026-10-13-hardware-cli-route/README.md`).
 Host-only payload regeneration matched both historical batch inputs byte for
 byte (`evidence/2026-10-13-release-readiness/payload-regeneration.md`).
 

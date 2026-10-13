@@ -53,8 +53,10 @@ Choose `--until data`, `train`, `eval`, `export`, or `inspect` for local work.
 Choose `--until compile`, `sim`, `infer`, or `compare` for remote work.
 For a 64-sample run, add `--samples 64`; the default is a labeled one-sample
 fast path. The CLI prepares one input selection before simulation, then uses
-it for inference and comparison. The new 64-sample CLI route has not run on
-the kit. Use a fresh run directory and read its `attempt.json`.
+it for inference and comparison. This route passed on the kit for both examples
+with 64 complete samples and exact simulator versus hardware output
+(`evidence/2026-10-13-hardware-cli-route/README.md`). Use a fresh run directory
+and read its `attempt.json`.
 A second `example run` starts again at data.
 Use a new run directory when changing the final stage or `--full` mode.
 Use individual pfkit commands only when their input files are already prepared.
