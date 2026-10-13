@@ -1,0 +1,96 @@
+{
+  "attempt_id": "20261013-144412-46d5d372",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "mkdir -p pfkit-work/20261013-144412-46d5d372"
+      ],
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work/20261013-144412-46d5d372'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:44:23.453925+00:00",
+      "started_utc": "2026-10-13T14:44:23.216823+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "reports/20261013-104359-signal-freq-assistant/model.vnnx",
+        "reports/20261013-104359-signal-freq-assistant/input.int8.npy",
+        "<kit-root>/pfkit/remote/vbx_sim_run.py",
+        "<tools-host>:pfkit-work/20261013-144412-46d5d372/"
+      ],
+      "command": "scp reports/20261013-104359-signal-freq-assistant/model.vnnx reports/20261013-104359-signal-freq-assistant/input.int8.npy <kit-root>/pfkit/remote/vbx_sim_run.py <tools-host>:pfkit-work/20261013-144412-46d5d372/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:44:23.702165+00:00",
+      "started_utc": "2026-10-13T14:44:23.454543+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "wsl.exe -d Ubuntu -- bash -lc 'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-144412-46d5d372 && python <tools-host-home>/pfkit-work/20261013-144412-46d5d372/vbx_sim_run.py --model <tools-host-home>/pfkit-work/20261013-144412-46d5d372/model.vnnx --input <tools-host-home>/pfkit-work/20261013-144412-46d5d372/input.int8.npy --output <tools-host-home>/pfkit-work/20261013-144412-46d5d372/sim.npz'"
+      ],
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-144412-46d5d372 && python <tools-host-home>/pfkit-work/20261013-144412-46d5d372/vbx_sim_run.py --model <tools-host-home>/pfkit-work/20261013-144412-46d5d372/model.vnnx --input <tools-host-home>/pfkit-work/20261013-144412-46d5d372/input.int8.npy --output <tools-host-home>/pfkit-work/20261013-144412-46d5d372/sim.npz'\"'\"''",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:44:30.538369+00:00",
+      "started_utc": "2026-10-13T14:44:23.702892+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<tools-host>:pfkit-work/20261013-144412-46d5d372/sim.npz",
+        "reports/20261013-104359-signal-freq-assistant/sim.npz"
+      ],
+      "command": "scp <tools-host>:pfkit-work/20261013-144412-46d5d372/sim.npz reports/20261013-104359-signal-freq-assistant/sim.npz",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:44:30.780289+00:00",
+      "started_utc": "2026-10-13T14:44:30.538921+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/toolshost.yaml",
+    "values": {
+      "command_prefix": "wsl.exe -d Ubuntu --",
+      "remote_work_dir": "<tools-host-home>/pfkit-work",
+      "size_config": "V250",
+      "ssh_target": "<tools-host>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      },
+      "transfer_dir": "pfkit-work",
+      "venv_activate": "~/vbx-env/bin/activate"
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "975fba72e20e275c41fefa5d8656093ee4bd3902afcbc60f7718fe3ab869f755",
+    "payload_sha256": "56b5c46c63d03e2cb4f69c19c4c5c4a786a662a3f006796de0b56ec83e3a549a"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-104359-signal-freq-assistant/sim.npz",
+    "sha256": "dfcfeaf0ee349cf31a2d4adf911feaf916b4336e37be30a4ce9bb0005985ac2f",
+    "size_bytes": 1103
+  },
+  "payload_sha256": "56b5c46c63d03e2cb4f69c19c4c5c4a786a662a3f006796de0b56ec83e3a549a",
+  "status": "completed"
+}
