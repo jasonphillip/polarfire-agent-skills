@@ -29,6 +29,8 @@ The repository is public (since 2026-10-12). Install it from the marketplace:
 
 Tested on 2026-10-12 night from the command line (`claude plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills`, Claude Code 2.1.296): the marketplace was added, the plugin installed at user scope as version 2026.10.0, then uninstalled again.
 
+Marketplace install: tested 2026-10-12
+
 For a local clone, start Claude Code with the plugin directory:
 
 ```sh
@@ -41,11 +43,11 @@ Enter this request in the client:
 Use the polarfire-bringup agent to run the signal-freq example through inspect.
 ```
 
-The marketplace command is an install instruction, not a tested install result.
+The marketplace command was tested as an install action on 2026-10-12.
 Claude Code 2.1.296 used the local plugin, the `dataset-and-training` skill,
 and the `polarfire-bringup` agent instructions on a clean clone.
 It ran `signal-freq` through inspect with exit 0 and reported the expected
-operators, flags, and eval MAE. The marketplace install is not yet tested.
+operators, flags, and eval MAE. Skill loading and remote execution are separate checks.
 Compile, simulation, and kit inference were not run through this client workflow.
 
 ## Codex CLI

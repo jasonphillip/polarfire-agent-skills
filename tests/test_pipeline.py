@@ -8,6 +8,73 @@ for key in ("OMP_NUM_THREADS", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS
     os.environ.setdefault(key, "1")
 
 
+def test_check_pack_accepts_dated_install_status():
+    text = (Path(__file__).resolve().parents[1] / "tools/check_pack.py").read_text()
+    assert '"not yet tested"' not in text
+    assert "Marketplace install: (tested" in text
+
+
+@pytest.mark.ml
+def test_export_forwards_sdk_root(tmp_path, monkeypatch):
+    import types
+    import tensorflow as tf
+    from pfkit import pipeline
+
+    captured = {}
+    monkeypatch.setattr("pfkit.inspect.inspect_model", lambda path, sdk_root=None: (
+        captured.update(sdk_root=sdk_root) or {"tensors": []}))
+    samples = np.zeros((2, 64), dtype=np.float32)
+    monkeypatch.setattr(pipeline, "load_data", lambda directory: {"test_x": samples, "train_x": samples})
+    monkeypatch.setattr(pipeline, "load_model", lambda name, directory: types.SimpleNamespace(named_modules=lambda: []))
+    monkeypatch.setattr("pfkit.adapters.to_keras", lambda *args, **kwargs: object())
+    monkeypatch.setattr("pfkit.adapters.verify_transliteration", lambda *args, **kwargs: None)
+
+    class Converter:
+        target_spec = types.SimpleNamespace(supported_ops=None)
+        def convert(self):
+            return b"model"
+
+    monkeypatch.setattr(tf.lite.TFLiteConverter, "from_keras_model", lambda model: Converter())
+    pipeline.export("signal-freq", tmp_path, sdk_root="/some/sdk")
+    assert captured["sdk_root"] == "/some/sdk"
+
+
+@pytest.mark.ml
+def test_inspect_blocks_dynamic_io(tmp_path):
+    import tensorflow as tf
+    from pfkit.inspect import inspect_model
+
+    @tf.function(input_signature=[tf.TensorSpec([None, 64], tf.float32)])
+    def model(x):
+        return x * 2.0
+
+    converter = tf.lite.TFLiteConverter.from_concrete_functions([model.get_concrete_function()], model)
+    path = tmp_path / "dynamic.tflite"
+    path.write_bytes(converter.convert())
+    result = inspect_model(path)
+    assert any("dynamic shape" in flag for flag in result["blocking_flags"])
+    assert any("float tensor" in flag for flag in result["blocking_flags"])
+
+
+def test_sdk_root_cli_routes(tmp_path, monkeypatch):
+    from pfkit import cli, pipeline
+
+    captured = []
+    monkeypatch.setattr(pipeline, "export", lambda *args, **kwargs: captured.append((args, kwargs)) or {})
+    monkeypatch.setattr(cli, "_stamp_local_stage", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pfkit.reporting.report", lambda path: Path(path) / "summary.md")
+    assert cli.main(["export", "signal-freq", "--run-dir", str(tmp_path), "--sdk-root", "/some/sdk"]) == 0
+    assert captured[-1][1]["sdk_root"] == "/some/sdk"
+    run_dir = tmp_path / "run"
+    monkeypatch.setattr(pipeline, "data", lambda *args, **kwargs: None)
+    monkeypatch.setattr(pipeline, "train", lambda *args, **kwargs: None)
+    monkeypatch.setattr(pipeline, "evaluate", lambda *args, **kwargs: None)
+    assert cli.main(["example", "run", "signal-freq", "--until", "export",
+                     "--run-dir", str(run_dir), "--sdk-root", "/some/sdk"]) == 0
+    assert captured[-1][1]["sdk_root"] == "/some/sdk"
+
+
+@pytest.mark.ml
 def test_adapters_accept_and_reject():
     import torch
     from torch import nn
@@ -72,6 +139,7 @@ def test_infer_plan_takes_bin_only(tmp_path):
     assert str(path.with_suffix(".bin")) in commands[1]
 
 
+@pytest.mark.ml
 def test_odmr_import_explains_missing_tk(monkeypatch):
     import builtins
     import importlib.util
@@ -109,6 +177,7 @@ def test_remote_dry_runs(tmp_path, capsys):
     assert "--timeout-ms 1000 --json" in output
 
 
+@pytest.mark.ml
 def test_inspect_flags_shape_and_float(tmp_path):
     import tensorflow as tf
     from pfkit.inspect import inspect_model
@@ -125,6 +194,7 @@ def test_inspect_flags_shape_and_float(tmp_path):
     assert "SHAPE" in result["unsupported"]
 
 
+@pytest.mark.ml
 def test_mlp_export_forms_and_fc_chain_flag(tmp_path):
     import subprocess
     import sys
@@ -221,6 +291,7 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
         runner.main()
 
 
+@pytest.mark.ml
 @pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp"])
 def test_examples_through_inspect(name, tmp_path):
     import tensorflow as tf

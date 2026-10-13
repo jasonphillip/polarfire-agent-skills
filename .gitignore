@@ -15,3 +15,4 @@ probes/out/
 hw/vbx_run
 hw/vbx_run.*
 hw/*.o
+hw/tests/vbx_run.fake

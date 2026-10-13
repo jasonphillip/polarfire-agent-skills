@@ -116,9 +116,11 @@ def main() -> int:
         if not (root / item).is_file():
             errors.append(f"required document absent: {item}")
     install = (root / "docs/install.md").read_text(encoding="utf-8")
-    for marker in ("2.1.296", "0.157.1", "--plugin-dir", "--marketplace", "not yet tested", "Cursor"):
+    for marker in ("2.1.296", "0.157.1", "--plugin-dir", "--marketplace", "Cursor"):
         if marker not in install:
             errors.append(f"docs/install.md: expected installation detail absent: {marker}")
+    if not re.search(r"(?m)^Marketplace install: (tested \d{4}-\d{2}-\d{2}|not yet tested)\b", install):
+        errors.append("docs/install.md: 'Marketplace install:' status line absent or undated")
     readme = (root / "README.md").read_text(encoding="utf-8")
     if "Cursor-Compatible" in readme:
         errors.append("README.md: untested Cursor badge present")

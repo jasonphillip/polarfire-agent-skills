@@ -11,6 +11,7 @@ CC := $(CROSS)gcc
 NATIVE_CC ?= gcc
 THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ROOT_DIR := $(abspath $(THIS_DIR)/..)
+PYTHON ?= $(ROOT_DIR)/.venv/bin/python
 VBX_SDK ?= $(ROOT_DIR)/deps/vectorblox-sdk
 VBX_DRV := $(VBX_SDK)/drivers/vectorblox
 VBX_RT := $(VBX_DRV)/vbx_cnn_api.c $(VBX_DRV)/vbx_cnn_model.c
@@ -28,7 +29,7 @@ native: $(THIS_DIR)/vbx_run.c $(VBX_RT)
 
 test:
 	@$(NATIVE_CC) $(FLAGS) -Werror -DVBX_RUN_FAKE_DRIVER=1 $(THIS_DIR)/vbx_run.c $(THIS_DIR)/tests/fake_vbx_cnn_api.c -o $(THIS_DIR)/tests/vbx_run.fake $(LIBS)
-	@$(ROOT_DIR)/.venv/bin/python $(THIS_DIR)/tests/test_fake_driver.py $(THIS_DIR)/tests/vbx_run.fake
+	@$(PYTHON) $(THIS_DIR)/tests/test_fake_driver.py $(THIS_DIR)/tests/vbx_run.fake
 
 clean:
 	rm -f vbx_run vbx_run.native tests/vbx_run.fake

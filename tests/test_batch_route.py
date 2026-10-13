@@ -80,6 +80,7 @@ def test_prepare_input_cli_forwards_selection(tmp_path, monkeypatch, capsys):
     assert '"samples": 8' in capsys.readouterr().out
 
 
+@pytest.mark.ml
 def test_compare_reports_batch_metadata(tmp_path, monkeypatch):
     import tensorflow as tf
     import torch

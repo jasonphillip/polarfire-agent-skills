@@ -42,6 +42,7 @@ def parser():
             stage.add_argument("--epochs", type=int)
         if name == "export":
             stage.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
+            stage.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     inspect = sub.add_parser("inspect")
     inspect.add_argument("model")
     inspect.add_argument("--run-dir")
@@ -308,7 +309,7 @@ def _dispatch(args):
         return steps.prepare_input(args.example, _run_dir(args), samples=args.samples,
                                    split=args.split, selection=args.selection, seed=args.seed)
     if args.command == "export":
-        result = steps.export(args.example, _run_dir(args), args.form)
+        result = steps.export(args.example, _run_dir(args), args.form, sdk_root=args.sdk_root)
         _stamp_local_stage(args.run_dir, "export")
         return result
     if args.command == "inspect":
@@ -358,7 +359,7 @@ def _dispatch(args):
                 if stage == "data": result = steps.data(args.name, run_dir, args.full)
                 elif stage == "train": result = steps.train(args.name, run_dir, args.full)
                 elif stage == "eval": result = steps.evaluate(args.name, run_dir)
-                elif stage == "export": result = steps.export(args.name, run_dir, args.form)
+                elif stage == "export": result = steps.export(args.name, run_dir, args.form, sdk_root=args.sdk_root)
                 elif stage == "inspect":
                     from .inspect import inspect_model
                     result = inspect_model(run_dir / "model.tflite", args.sdk_root)

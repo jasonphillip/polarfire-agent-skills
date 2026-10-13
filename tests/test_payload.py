@@ -65,6 +65,7 @@ def test_prepare_input_rejects_zero_samples(tmp_path):
         prepare_input("signal-freq", tmp_path, samples=0)
 
 
+@pytest.mark.ml
 def test_prepare_and_compare_use_selected_payload(tmp_path, monkeypatch):
     import tensorflow as tf
     import torch

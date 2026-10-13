@@ -131,7 +131,7 @@ def evaluate(name, run_dir):
     return report
 
 
-def export(name, run_dir, form="conv1x1"):
+def export(name, run_dir, form="conv1x1", sdk_root=None):
     import tensorflow as tf
     from .adapters import to_keras, verify_transliteration
     from .inspect import inspect_model
@@ -175,7 +175,7 @@ def export(name, run_dir, form="conv1x1"):
             raise RuntimeError(f"INT8 conversion failed: {first}; fallback experimental_new_quantizer=False: {second}") from second
     path = Path(run_dir) / "model.tflite"
     path.write_bytes(blob)
-    result = inspect_model(path)
+    result = inspect_model(path, sdk_root=sdk_root)
     qats = {}
     for module_name, module in model.named_modules():
         if "fake_quant" in type(module).__name__.lower() or "observer" in type(module).__name__.lower():

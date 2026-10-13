@@ -1,5 +1,13 @@
 # Validation record, 2026-10-12
 
+## Test routes
+
+Run host checks with `.venv/bin/python -m pytest -m host -q -rs`.
+Run the Python 3.11 ML smoke tests with `.venv/bin/python -m pytest -m ml -q -rs`.
+Build and check the fake driver with `make -C hw test`.
+Vendor-tool and hardware checks require manual runs on the tools host and kit; CI does not run them.
+Pytest reports skipped ML tests with their reason when torch or TensorFlow is unavailable.
+
 Each result names the machine role and the evidence available in this checkout. The Libero build is still running.
 
 | Stage | Host | Result | Evidence path |
