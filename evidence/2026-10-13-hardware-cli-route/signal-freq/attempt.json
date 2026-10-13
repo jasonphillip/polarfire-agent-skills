@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "example",
+    "run",
+    "signal-freq",
+    "--until",
+    "compare",
+    "--samples",
+    "64",
+    "--toolshost",
+    "<config>/toolshost.yaml",
+    "--kit",
+    "<config>/kit.yaml",
+    "--run-dir",
+    "reports/20261013-103847-signal-freq-cli64"
+  ],
+  "attempt_id": "20261013-143847-a51b3f2b",
+  "dirty": false,
+  "kit_revision": "db95a26de0aee6456629f2abbf55e45c18f2a90c",
+  "started_utc": "2026-10-13T14:38:47.486618+00:00",
+  "worktree": false
+}
