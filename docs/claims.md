@@ -5,8 +5,13 @@ Local commands run in the kit's Python 3.11 environment.
 The C2, C6, and C8 compiler and simulator results below came from the tools host.
 These probes bound the `mlp` and `conv2d_1k` adapters in `docs/adapters.md`.
 On 2026-10-13, `odmr-fcnn` became the first `conv2d_1k` model to run on the
-kit. Its kit and simulator outputs matched exactly, but its INT8 export missed
-the float tolerance. See `evidence/2026-10-13-odmr-fcnn/README.md`.
+kit, on both the case-study and kit-built images. Hardware parity: kit =
+simulator = INT8 TFLite, 0 LSB, on both images. Conversion accuracy: the
+largest per-sample float-to-INT8 prediction difference was 29.8 µT against
+the 5.0 µT tolerance. One of 64 samples exceeded it; the mean difference was
+2.39 µT. This is not an error against ground truth. Overall result: failed.
+See `evidence/2026-10-13-odmr-fcnn/README.md` and
+`evidence/2026-10-13-kit-built-image/README.md`.
 An inspect pass alone does not establish compiler acceptance or correct kit
 output. Keep probe results separate from the later kit run.
 

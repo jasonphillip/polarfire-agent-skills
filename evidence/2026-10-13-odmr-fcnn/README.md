@@ -12,7 +12,12 @@ Run: `pfkit example run odmr-fcnn --until compare --samples 64`, on the kit's ca
 | kit | 64 of 64 completed, NPU error 0; wall time median 0.038 ms, max 0.083 ms (quiet-board sample, not a worst-case bound) |
 | simulator vs kit | 0 LSB, exact |
 | TFLite vs simulator | 0 LSB, exact |
-| float vs TFLite | **failed**: max 29.8 µT against the example's 5.0 µT tolerance |
-| float model test error | MAE 13.5 µT, RMSE 16.4 µT (100 test samples) |
+| float vs INT8 TFLite prediction difference | **failed**: largest per-sample difference 29.8 µT against the example's 5.0 µT tolerance |
+| float model error against ground truth | MAE 13.5 µT, RMSE 16.4 µT (100 test samples, `eval.json`) |
 
-Reading: the deployment path is exact: the kit reproduces the simulator, and the simulator reproduces the int8 TFLite model. The int8 quantization of this float model loses up to 29.8 µT. For comparison, `odmr-mlp` loses at most 1.67 µT under the same tolerance (`reports` run of 2026-10-13, not committed). The example is therefore not a passing example; its tolerance was not raised. The cause of the quantization loss was not investigated.
+Reading, in two separate parts:
+
+- Hardware parity: exact. The kit reproduces the simulator, and the simulator reproduces the INT8 TFLite model, on all 64 samples.
+- Conversion accuracy: below the example's tolerance. The 29.8 µT figure is the largest difference between the float and the INT8 prediction for one sample; it is not an error against ground truth. On the kit-built image the same run gives a mean difference of 2.39 µT and one sample of 64 over the 5.0 µT tolerance; float and INT8 errors against ground truth are about equal (MAE 14.0 and 13.9 µT on those 64 samples); `odmr-mlp` has a 1.67 µT largest difference (`evidence/2026-10-13-kit-built-image/README.md`, `odmr-fcnn/accuracy.json`).
+
+The overall result stays failed; the tolerance was not raised. The cause of the one large difference was not investigated.

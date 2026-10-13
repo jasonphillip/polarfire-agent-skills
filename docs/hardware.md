@@ -44,7 +44,7 @@ Decompress the `.wic.gz` before writing the `.wic` to an SD card. Check the dest
 
 The image needs `generic-uio` for the control page and `/dev/udmabuf-ddr-nc0` for DMA model and IO buffers. The case study observed its non-cached pool at physical `0xc8000000`, size `0x02000000` bytes (32 MiB). That is a case-study observation, not a promise for another image. Sources: `deps/tychon-quantum-sensing/docs/model-to-v250.md:165-170`; `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/docs/rung_f_decerr_handoff_2026-06-16.md:31-34`. If the image lacks the pool, reserve it in the **base** device tree at boot. A runtime overlay cannot reserve this memory. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/README.md:197-200`.
 
-The control page is `0x60030000` through `0x60030fff`. The PID/watchdog page begins at `0x60040000`. The DMA controller page begins at `0x60001000`. The runner uses only the SDK mapped V250 control page; do not map or probe the other pages with it. Sources: `deps/icicle-kit-reference-design/script_support/additional_configurations/Vectorblox/FIC0_INITIATOR_VBX.tcl:1162-1165`; `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/two_slot_vbx_pid.dtso:20-45`.
+The V250 control page is `0x60030000` through `0x60030fff`. The case study's PID/watchdog page begins at `0x60040000`. In the kit-built fabric, `0x60001000` maps the fabric DMA controller's control page. The runner uses only the SDK mapped V250 control page; do not map or probe the other pages with it. Sources: `deps/icicle-kit-reference-design/script_support/additional_configurations/Vectorblox/FIC0_INITIATOR_VBX.tcl:1162-1165`; `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/two_slot_vbx_pid.dtso:20-45`; `evidence/2026-10-13-kit-built-image/test-configuration.md`.
 
 ## Device tree overlay
 
@@ -59,6 +59,10 @@ ls /dev/udmabuf-ddr-nc0
 ```
 
 Run `dtc` from the directory containing `vbx_only.dtso`. Check that one UIO name is exactly `vbx`. The SDK `release-v2.0.3` driver searches that literal name in `deps/vectorblox-sdk/drivers/vectorblox/vbx_cnn_api.c:75-107`. The overlay is not proof that the fabric contains the correct core.
+
+### Device-tree overlay on the kit-built image
+
+On 2026-10-13, the kit still booted the case study's seed7 overlay. Its `vbx` node matched the new fabric. Its `pid@60001000` node instead mapped the fabric DMA controller's control page. (The kit's installed seed7 overlay, `seed7_vbx_pid.dtso`, is older than the case study's published `two_slot_vbx_pid.dtso`: it places its PID node at `0x60001000`; the published overlay uses `0x60040000`.) The kit audit found nothing opening that node. `hw/overlay/vbx_only.dtso` omits the PID node and matches the new fabric; it was not applied during these tests. Do not run the case study's PID or watchdog tools on the kit-built image. See `evidence/2026-10-13-kit-built-image/test-configuration.md` and `evidence/2026-10-13-kit-built-image/README.md`.
 
 ## Runner
 
@@ -133,4 +137,4 @@ sensor or actuator path. It is a sample of a quiet board, not a worst-case
 bound. The 64-sample CLI route passed on the kit for both examples; its runner
 timings are also quiet-board samples (`evidence/2026-10-13-hardware-cli-route/README.md`).
 
-On 2026-10-12 the kit's build script ran in Libero SoC 2025.2 on the tools host: exit 0 in 40 min 25 s, timing met (0 violations, worst slack 1.049 ns), job exported (sha256 6d5cae6c...), generated CoreVectorBlox 2.0.1 PRESET 0 (`evidence/2026-10-12-libero-build/`). The exported image has not been programmed onto a kit, and the kit's overlay has not been applied to it; both remain unverified on hardware.
+On 2026-10-12 the kit's build script ran in Libero SoC 2025.2 on the tools host: exit 0 in 40 min 25 s, timing met (0 violations, worst slack 1.049 ns), and job exported (`evidence/2026-10-12-libero-build/`). On 2026-10-13, FlashPro Express programmed `Vectorblox_FD0AEBB95776A726D3D.job` (sha256 `6d5cae6c30053ed5d16325f9cc03e57eb706e6ab3f3f9306d741cad02d711c6c`, CoreVectorBlox 2.0.1 V250) using the PROGRAM action only. The kit reset itself and came back. Both 64-sample examples passed with outputs byte-identical to the case-study image. The rollback is the case-study seed7 V250 job (sha256 `39c8bcf2665ce8b79bcc2abb552ddd2b7b703729d50876744c2cb63c82ca230b`). See `evidence/2026-10-13-kit-built-image/README.md`.
