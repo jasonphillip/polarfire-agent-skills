@@ -29,7 +29,12 @@ The supported target is one board and one NPU size.
 
 Model deployment is the core path. The path runs from a trained model to an INT8 TFLite file, then to a compiled `.vnnx` file, then to inference on the kit.
 Model support is bounded to the `mlp` and `conv2d_1k` adapters in
-`docs/adapters.md`. The `conv2d_1k` route has simulator evidence only.
+`docs/adapters.md`.
+
+| Adapter | Examples | Status |
+|---|---|---|
+| `mlp` | `signal-freq`, `odmr-mlp` | Both passed the kit comparison on 2026-10-12. See `evidence/2026-10-12-hardware/batch64/README.md`. |
+| `conv2d_1k` | `odmr-fcnn` | On 2026-10-13, the first convolution-route model completed on the case-study V250 image. Kit and simulator outputs matched exactly, but float versus INT8 max error was 29.8 µT against 5.0 µT. The example did not pass; the tolerance was not raised, and the cause was not investigated. See `evidence/2026-10-13-odmr-fcnn/README.md`. |
 
 PID and watchdog integration is a separate, optional example. Inference does not need it.
 A user can skip that example and still complete the core path.

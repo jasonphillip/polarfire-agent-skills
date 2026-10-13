@@ -12,3 +12,5 @@ The public source is https://github.com/jasonphillip/tychon-quantum-sensing. Use
 - `workers/polarfire-hybrid-control/docs/rung_f_v250_on_silicon_results_2026-06-16.md`
 
 The FCNN export script expects its own checkpoint and calibration data. It is an example of static-shape INT8 export, not a model-independent exporter. The source reports replayed ODMR input on its kit. Run the checks again for your model and kit.
+
+For a runnable FCNN without a residual add, see `examples/odmr-fcnn` and `evidence/2026-10-13-odmr-fcnn/README.md`.
