@@ -112,3 +112,11 @@ The Tk fix was verified in the clean macOS run: 11 tests passed and
 `odmr-mlp` reached inspect. `signal-freq` needs neither dependency.
 Read `docs/pipeline.md` for stage outputs and remote configuration.
 Read `docs/hardware.md` before tools host or kit work.
+
+On 2026-10-13, a clean clone of the public repository on macOS (Apple silicon,
+Homebrew Python 3.11) ran `make env`, the host route (77 passed), the ML route
+(18 passed, no skips), and inspect. `make -C hw test` did not build on macOS:
+the SDK enum `ARG_MAX` collides with a macOS macro, and macOS lacks
+`pthread_condattr_setclock`. The fake-driver test needs Linux. The hardware
+route was not run from that machine. See
+`evidence/2026-10-13-clean-clone/mac/README.md`.
