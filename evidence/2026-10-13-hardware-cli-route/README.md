@@ -28,3 +28,14 @@ The `model.vnnx` files of these runs have different sha256 values from the 2026-
 Timing: `wall_ms` is the runner's own measurement (see `docs/hardware.md`), a sample of a quiet board, not a worst-case bound.
 
 Files per example: `attempt.json`, `input.manifest.json`, `input.int8.npy`, `compile.json`, `sim.json`, `sim.npz`, `infer.json`, `hw.json`, `hw.bin`, `compare.json`, `summary.md`. Machine names, addresses and home paths are replaced with `<tools-host>`, `<tools-host-home>`, `<kit>`, `<kit-root>` and `<config>`.
+
+## Re-run after the review fixes (same day, kit revision 84e9b7c, clean tree)
+
+The review fix commit `84e9b7c` changed remote transfers (raw SFTP targets), the `hw.bin` size check and compare's payload binding, so the route was run again on the kit.
+
+| run | kit remote_dir | compare status / complete / samples | sim_vs_hw | infer | hw.bin sha256 | equal to 2026-10-12 |
+|---|---|---|---|---|---|---|
+| `post-fix-spaced-remote-dir/signal-freq` | `/tmp/pf kit` (contains a space) | passed / true / 64 | 0 LSB, exact | completed | f3e1261b53f12fd8… | yes |
+| `post-fix/odmr-mlp` | default | passed / true / 64 | 0 LSB, exact | completed | 88261c057812c619… | yes |
+
+The spaced run shows the remote-path handling end to end: `scp` targets carry the raw path (OpenSSH 9.6 uses SFTP; a shell-quoted target failed with "No such file or directory" in a separate live probe) and the `ssh` scripts quote it. Each run took about 27 s.

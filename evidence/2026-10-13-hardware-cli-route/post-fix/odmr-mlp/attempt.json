@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "example",
+    "run",
+    "odmr-mlp",
+    "--until",
+    "compare",
+    "--samples",
+    "64",
+    "--toolshost",
+    "<config>/toolshost.yaml",
+    "--kit",
+    "<config>/kit.yaml",
+    "--run-dir",
+    "reports/20261013-105218-odmr-mlp-fix-normal"
+  ],
+  "attempt_id": "20261013-145218-d811a6fd",
+  "dirty": false,
+  "kit_revision": "84e9b7c2abe1c22e4bc108f8857195bd9478f1c8",
+  "started_utc": "2026-10-13T14:52:18.355841+00:00",
+  "worktree": false
+}

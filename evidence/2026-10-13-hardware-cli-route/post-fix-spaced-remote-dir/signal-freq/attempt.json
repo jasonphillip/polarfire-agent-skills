@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "example",
+    "run",
+    "signal-freq",
+    "--until",
+    "compare",
+    "--samples",
+    "64",
+    "--toolshost",
+    "<config>/toolshost.yaml",
+    "--kit",
+    "<config>/kit-spaced.yaml",
+    "--run-dir",
+    "reports/20261013-105151-signal-freq-fix-spaced"
+  ],
+  "attempt_id": "20261013-145152-3983c0f7",
+  "dirty": false,
+  "kit_revision": "84e9b7c2abe1c22e4bc108f8857195bd9478f1c8",
+  "started_utc": "2026-10-13T14:51:52.002700+00:00",
+  "worktree": false
+}
