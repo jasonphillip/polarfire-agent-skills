@@ -150,7 +150,8 @@ def test_example_run_failure_report(tmp_path, monkeypatch):
     assert code == 1
     failure = json.loads((run_dir / "failure.json").read_text())
     assert failure["stage"] == "data" and "dataset contract" in failure["error"]
-    assert "disk" in failure["report_error"] and failure["attempt_id"] is None
+    assert "disk" in failure["report_error"]
+    assert failure["attempt_id"] == json.loads((run_dir / "attempt.json").read_text())["attempt_id"]
 
 
 def test_report_marks_failed_stage(tmp_path):

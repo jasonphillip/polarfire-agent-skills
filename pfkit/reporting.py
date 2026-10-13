@@ -12,6 +12,9 @@ def git_revision(directory):
     if git.is_file():
         line = git.read_text().strip()
         git = (Path(directory) / line.removeprefix("gitdir: ")).resolve()
+    common = git
+    if (git / "commondir").is_file():
+        common = (git / (git / "commondir").read_text().strip()).resolve()
     head = git / "HEAD"
     if not head.exists():
         return "unavailable"
@@ -19,9 +22,11 @@ def git_revision(directory):
     if value.startswith("ref: "):
         ref = value[5:]
         loose = git / ref
+        if not loose.exists():
+            loose = common / ref
         if loose.exists():
             return loose.read_text().strip()
-        packed = git / "packed-refs"
+        packed = common / "packed-refs"
         if packed.exists():
             for line in packed.read_text().splitlines():
                 if line.endswith(" " + ref):
@@ -41,6 +46,8 @@ def append_log(run_dir, command, code):
 def report(run_dir):
     directory = Path(run_dir)
     directory.mkdir(parents=True, exist_ok=True)
+    attempt_path = directory / "attempt.json"
+    attempt_id = json.loads(attempt_path.read_text()).get("attempt_id") if attempt_path.is_file() else None
     versions = sorted({f"{name}=={dist.version}" for dist in distributions()
                        if (name := dist.metadata.get("Name"))})
     (directory / "pip-freeze.txt").write_text("\n".join(versions) + "\n")
@@ -58,11 +65,17 @@ def report(run_dir):
     for name in ("dataset.manifest.json", "training.json", "eval.json", "export.manifest.json", "compile.json", "sim.json", "infer.json", "compare.json"):
         path = directory / name
         if path.exists():
-            if name in ("compile.json", "sim.json", "infer.json"):
-                status = json.loads(path.read_text()).get("status", "not run")
-                label = "recorded" if status == "completed" else "failed" if status == "failed" else "not run"
-            else:
+            record = json.loads(path.read_text())
+            source_id = record.get("attempt_id")
+            status = record.get("status", "not run")
+            if attempt_id is not None and source_id != attempt_id:
+                label = f"stale (attempt {source_id or 'unknown'})"
+            elif status == "failed":
+                label = "failed"
+            elif status in ("completed", "passed") and source_id is not None and source_id == attempt_id:
                 label = "recorded"
+            else:
+                label = "not run"
             lines.append(f"- {name}: {label}")
         else:
             lines.append(f"- {name}: not run")

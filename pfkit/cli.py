@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 import json
+import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -108,8 +109,29 @@ def _deps_fetch(dry):
             subprocess.run(cmd, check=True)
 
 
+def _stamp_local_stage(run_dir, stage, attempt_id=None):
+    from .attempt import manual
+    from .pipeline import sha256, write_json
+
+    names = {"data": "dataset.manifest.json", "train": "training.json",
+             "eval": "eval.json", "export": "export.manifest.json", "inspect": "inspect.json"}
+    path = Path(run_dir) / names[stage]
+    if not path.is_file():
+        return
+    record = json.loads(path.read_text())
+    source = {"train": "dataset.npz", "eval": "model.pt",
+              "export": "model.pt", "inspect": "model.tflite"}.get(stage)
+    source_path = Path(run_dir) / source if source else None
+    record.update(status="completed", attempt_id=attempt_id or manual(run_dir)["attempt_id"],
+                  inputs={"model_sha256": sha256(source_path) if source_path and source_path.is_file() else None,
+                          "payload_sha256": None})
+    write_json(path, record)
+
+
 def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
-                  input_file=None, metadata=None, runner=None, timeout_ms=5000):
+                  input_file=None, metadata=None, runner=None, timeout_ms=5000,
+                  attempt_id=None):
+    from . import attempt
     from .errors import RemoteCommandError
     from .pipeline import sha256, write_json
     from .remote_ops import compile_plan, infer_plan, load_config, run_plan, sim_plan
@@ -117,8 +139,14 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
     manifest = Path(run_dir) / f"{stage}.json" if run_dir else None
     if manifest:
         manifest.parent.mkdir(parents=True, exist_ok=True)
+        attempt_id = attempt_id or attempt.manual(run_dir)["attempt_id"]
+    else:
+        attempt_id = attempt_id or datetime.now(timezone.utc).strftime("manual-%Y%m%d-%H%M%S-") + secrets.token_hex(4)
     cfg = load_config(config)
     result = {"status": "not run", "commands": [], "error": None,
+              "attempt_id": attempt_id, "inputs": {
+                  "model_sha256": sha256(model) if Path(model).is_file() else None,
+                  "payload_sha256": None},
               "config": {"path": str(config), "values": cfg},
               "local_python": "pip-freeze.txt describes the local Python environment, not the tools host"}
     if stage in ("sim", "infer") and run_dir:
@@ -138,9 +166,18 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
                     binary.read_bytes() != np.ascontiguousarray(samples).tobytes()):
                 raise ValueError("payload hash mismatch")
             result["payload_sha256"] = payload["payload_sha256"]
+            result["inputs"]["payload_sha256"] = payload["payload_sha256"]
+    elif stage in ("sim", "infer") and input_file and Path(input_file).is_file():
+        if Path(input_file).suffix == ".npy":
+            from .payload import payload_sha256
+            import numpy as np
+            result["inputs"]["payload_sha256"] = payload_sha256(np.load(input_file, allow_pickle=False))
+        else:
+            result["inputs"]["payload_sha256"] = sha256(input_file)
     if stage == "infer":
         runner_path = Path(runner)
         result["runner_sha256"] = sha256(runner_path) if runner_path.is_file() else None
+        result["inputs"]["runner_sha256"] = result["runner_sha256"]
     try:
         if stage == "sim" and input_file and Path(input_file).is_file():
             import numpy as np
@@ -148,11 +185,14 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
             if samples.dtype != np.int8 or samples.size < 1:
                 raise ValueError("sim input must contain K >= 1 int8 samples")
         if stage == "compile":
-            commands = compile_plan(model, output, config)
+            commands = compile_plan(model, output, config, attempt_id=attempt_id)
         elif stage == "sim":
-            commands = sim_plan(model, input_file, output, config)
+            commands = sim_plan(model, input_file, output, config, attempt_id=attempt_id)
         else:
-            commands = infer_plan(model, input_file, output, metadata, runner, config, timeout_ms)
+            commands = infer_plan(model, input_file, output, metadata, runner, config, timeout_ms,
+                                  attempt_id=attempt_id)
+        if manifest:
+            write_json(manifest, result)
         result["commands"] = run_plan(commands, dry_run=dry_run, manifest=manifest)
         if not dry_run:
             if not Path(output).is_file():
@@ -174,7 +214,7 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
         if isinstance(error, RemoteCommandError):
             result["commands"] = list(error.records)
             if stage == "infer":
-                target, directory = cfg["ssh_target"], cfg["remote_dir"]
+                target, directory = cfg["ssh_target"], f"{cfg['remote_dir']}/{attempt_id}"
                 transfer = ["scp", f"{target}:{directory}/{Path(metadata).name}", str(metadata)]
                 retrieval = {"attempted": True, "path": str(metadata), "exit_code": "not run"}
                 try:
@@ -200,13 +240,21 @@ def _dispatch(args):
     if args.command == "deps":
         return _deps_fetch(args.dry_run)
     if args.command == "data":
-        return steps.data(args.example, _run_dir(args), args.full, args.import_path)
+        result = steps.data(args.example, _run_dir(args), args.full, args.import_path)
+        _stamp_local_stage(args.run_dir, "data")
+        return result
     if args.command == "train":
-        return steps.train(args.example, _run_dir(args), args.full, args.epochs)
+        result = steps.train(args.example, _run_dir(args), args.full, args.epochs)
+        _stamp_local_stage(args.run_dir, "train")
+        return result
     if args.command == "eval":
-        return steps.evaluate(args.example, _run_dir(args))
+        result = steps.evaluate(args.example, _run_dir(args))
+        _stamp_local_stage(args.run_dir, "eval")
+        return result
     if args.command == "export":
-        return steps.export(args.example, _run_dir(args), args.form)
+        result = steps.export(args.example, _run_dir(args), args.form)
+        _stamp_local_stage(args.run_dir, "export")
+        return result
     if args.command == "inspect":
         from .inspect import inspect_model, print_inspection
         result = inspect_model(args.model, args.sdk_root)
@@ -216,6 +264,8 @@ def _dispatch(args):
         blocking = [flag for flag in result["blocking_flags"] if not (args.allow_fc_chain and flag.startswith("fc_chain_fused_activation"))]
         if result["unsupported"] or result["limit_violations"] or blocking:
             raise ValueError(f"Unsupported TFLite operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
+        if args.run_dir:
+            _stamp_local_stage(args.run_dir, "inspect")
         return result
     if args.command in ("compile", "sim", "infer"):
         _remote_stage(args.command, args.model, args.output, args.config, args.run_dir, args.dry_run,
@@ -233,9 +283,13 @@ def _dispatch(args):
         from .reporting import report
         return report(args.run_dir)
     if args.command == "example":
+        from . import attempt
         from .reporting import report
         run_dir = Path(args.run_dir) if args.run_dir else ROOT / "reports" / (datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + args.name)
+        if run_dir.exists() and any(run_dir.iterdir()):
+            raise ValueError(f"run directory not empty: {run_dir}; choose a new directory (historical files are kept)")
         run_dir.mkdir(parents=True, exist_ok=True)
+        attempt_id = attempt.new(run_dir, args._argv)["attempt_id"]
         sequence = ("data", "train", "eval", "export", "inspect", "compile", "sim", "infer", "compare")
         from .reporting import append_log
         stage = "not run"
@@ -254,26 +308,30 @@ def _dispatch(args):
                     if result["unsupported"] or result["limit_violations"] or blocking:
                         raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
                 elif stage == "compile":
-                    result = _remote_stage(stage, run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost, run_dir)
+                    result = _remote_stage(stage, run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost, run_dir,
+                                           attempt_id=attempt_id)
                 elif stage == "sim":
                     steps.prepare_input(args.name, run_dir)
                     result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "sim.npz", args.toolshost,
-                                           run_dir, input_file=run_dir / "input.int8.npy")
+                                           run_dir, input_file=run_dir / "input.int8.npy", attempt_id=attempt_id)
                 elif stage == "infer":
                     result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "hw.bin", args.kit,
                                            run_dir, input_file=run_dir / "input.int8.bin",
-                                           metadata=run_dir / "hw.json", runner=ROOT / "hw" / "vbx_run")
+                                           metadata=run_dir / "hw.json", runner=ROOT / "hw" / "vbx_run",
+                                           attempt_id=attempt_id)
                 else:
                     result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz",
                                            hw=run_dir / "hw.bin", scope="full")
                     if not result["pass"]:
                         raise ValueError(f"Comparison {result['status']}: failed={result['checks_failed']} "
                                          f"missing={[name for name in result['required'] if name not in result['checks_run']]}")
+                if stage in ("data", "train", "eval", "export", "inspect"):
+                    _stamp_local_stage(run_dir, stage, attempt_id)
                 if result is not None:
                     print(json.dumps(result, sort_keys=True)[:500])
                 append_log(run_dir, f"pfkit {stage} {args.name} --run-dir {run_dir}", 0)
         except Exception as error:
-            failure = {"stage": stage, "error": str(error), "attempt_id": None,
+            failure = {"stage": stage, "error": str(error), "attempt_id": attempt_id,
                        "records": getattr(error, "records", [])}
             steps.write_json(run_dir / "failure.json", failure)
             append_log(run_dir, f"pfkit {stage} {args.name} --run-dir {run_dir}", 1)
@@ -289,6 +347,7 @@ def _dispatch(args):
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    args._argv = list(sys.argv[1:] if argv is None else argv)
     from .reporting import append_log
     try:
         result = _dispatch(args)

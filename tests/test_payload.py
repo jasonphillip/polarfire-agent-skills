@@ -68,6 +68,7 @@ def test_prepare_input_rejects_zero_samples(tmp_path):
 def test_prepare_and_compare_use_selected_payload(tmp_path, monkeypatch):
     import tensorflow as tf
     import torch
+    from pfkit.attempt import manual
     from pfkit import pipeline
 
     values = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]], dtype=np.float32)
@@ -107,6 +108,15 @@ def test_prepare_and_compare_use_selected_payload(tmp_path, monkeypatch):
     np.savez(sim, outputs=np.zeros((2, 1), dtype=np.int8))
     hw = tmp_path / "hw.bin"
     hw.write_bytes(b"\x00\x00")
+    model = tmp_path / "model.vnnx"
+    model.write_bytes(b"model")
+    attempt_id = manual(tmp_path)["attempt_id"]
+    for name, output in (("sim", sim), ("infer", hw)):
+        pipeline.write_json(tmp_path / f"{name}.json", {
+            "status": "completed", "attempt_id": attempt_id,
+            "inputs": {"model_sha256": pipeline.sha256(model),
+                       "payload_sha256": manifest["payload_sha256"]},
+            "output": {"path": str(output), "sha256": pipeline.sha256(output)}})
     report = pipeline.compare("signal-freq", tmp_path, sim=sim, hw=hw, scope="full")
     assert report["pass"] and report["samples"] == 2
     assert report["selection"] == manifest["selection"]

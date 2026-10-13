@@ -275,15 +275,77 @@ def prepare_input(name, run_dir, samples=1, split="test", selection="first", see
                          {"scale": float(scale), "zero_point": int(zero)})
 
 
+def check_prerequisites(run_dir, sim=None, hw=None):
+    """Reject recorded outputs that do not describe the current run inputs."""
+    from .attempt import current
+
+    directory = Path(run_dir)
+    active = current(directory)
+    active_id = active.get("attempt_id") if active else None
+    manifest_path = directory / "input.manifest.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
+    for artifact, name in ((sim, "sim"), (hw, "infer")):
+        if artifact is None:
+            continue
+        record_path = directory / f"{name}.json"
+        if not record_path.is_file():
+            raise ValueError(f"stale: {name}.json is missing for attempt {active_id or 'unknown'}")
+        record = json.loads(record_path.read_text())
+        if record.get("status") == "failed":
+            continue
+        if record.get("status") != "completed":
+            raise ValueError(f"stale: {name}.json stage was not completed")
+        recorded_id = record.get("attempt_id")
+        if active_id and recorded_id != active_id:
+            raise ValueError(f"stale: {name}.json belongs to attempt {recorded_id or 'unknown'}")
+        inputs = record.get("inputs", {})
+        model_hash = inputs.get("model_sha256")
+        model_path = directory / "model.vnnx"
+        if not model_hash:
+            raise ValueError(f"stale: {name}.json has no model hash")
+        actual = sha256(model_path) if model_path.is_file() else "missing"
+        if model_hash != actual:
+            raise ValueError(f"stale: {name}.json was recorded for model {model_hash[:8]}, current model is {actual[:8]}")
+        if manifest is not None:
+            recorded_payload = inputs.get("payload_sha256")
+            if recorded_payload != manifest.get("payload_sha256"):
+                raise ValueError(f"stale: {name}.json payload does not match input.manifest.json")
+        output = record.get("output")
+        if not output or not output.get("sha256"):
+            raise ValueError(f"stale: {name}.json has no output hash")
+        actual_output = sha256(artifact) if Path(artifact).is_file() else "missing"
+        if output["sha256"] != actual_output:
+            raise ValueError(f"stale: {name}.json output hash does not match {Path(artifact).name}")
+
+
 def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scope="requested"):
     if scope not in ("requested", "full"):
         raise ValueError(f"Unknown comparison scope: {scope}")
+    from .attempt import manual
+    active_id = manual(run_dir)["attempt_id"]
+    try:
+        check_prerequisites(run_dir, sim=sim, hw=hw)
+    except ValueError as error:
+        if not str(error).startswith("stale:"):
+            raise
+        write_json(Path(run_dir) / "compare.json", {"status": "stale", "pass": False,
+                                                  "attempt_id": active_id, "inputs": {},
+                                                  "reason": str(error)})
+        raise
+    sim_record = Path(run_dir) / "sim.json"
+    if sim is not None and sim_record.is_file() and json.loads(sim_record.read_text()).get("status") == "failed":
+        report = compare_arrays(None, None, required=CHECKS if scope == "full" else ("tflite_vs_sim",))
+        report.update(status="incomplete", reason="simulation stage failed",
+                      attempt_id=active_id, inputs={})
+        write_json(Path(run_dir) / "compare.json", report)
+        return report
     infer_record = Path(run_dir) / "infer.json"
     if hw is not None and infer_record.is_file():
         infer_status = json.loads(infer_record.read_text()).get("status")
         if infer_status == "failed":
             report = compare_arrays(None, None, required=CHECKS if scope == "full" else ("sim_vs_hw",))
-            report.update(status="incomplete", reason="inference stage failed")
+            report.update(status="incomplete", reason="inference stage failed",
+                          attempt_id=active_id, inputs={})
             write_json(Path(run_dir) / "compare.json", report)
             return report
     import tensorflow as tf
@@ -349,5 +411,9 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
     if manifest is not None:
         report.update(samples=len(selected_quantized), selection=manifest["selection"],
                       payload_sha256=manifest["payload_sha256"])
+    report.update(attempt_id=active_id,
+                  inputs={"model_sha256": sha256(Path(run_dir) / "model.vnnx")
+                          if (Path(run_dir) / "model.vnnx").is_file() else None,
+                          "payload_sha256": manifest["payload_sha256"] if manifest else None})
     write_json(Path(run_dir) / "compare.json", report)
     return report

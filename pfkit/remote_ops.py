@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib
 import json
+import secrets
 import shlex
 import subprocess
 import sys
@@ -31,11 +32,16 @@ def tools_command(cfg, script):
     return _q(prefix + ["bash", "-lc", inner]) if prefix else _q(["bash", "-lc", inner])
 
 
-def compile_plan(model, output, config):
+def _plan_attempt_id(attempt_id):
+    return attempt_id or datetime.now(timezone.utc).strftime("manual-%Y%m%d-%H%M%S-") + secrets.token_hex(4)
+
+
+def compile_plan(model, output, config, attempt_id=None):
     cfg = load_config(config)
     target = cfg["ssh_target"]
-    transfer = cfg.get("transfer_dir", cfg["remote_work_dir"])
-    work = cfg["remote_work_dir"]
+    attempt_id = _plan_attempt_id(attempt_id)
+    transfer = f"{cfg.get('transfer_dir', cfg['remote_work_dir'])}/{attempt_id}"
+    work = f"{cfg['remote_work_dir']}/{attempt_id}"
     name = Path(model).name
     out = Path(output).name
     cmds = [_ssh(target, f"mkdir -p {shlex.quote(transfer)}"),
@@ -45,11 +51,12 @@ def compile_plan(model, output, config):
     return cmds
 
 
-def sim_plan(model, input_file, output, config):
+def sim_plan(model, input_file, output, config, attempt_id=None):
     cfg = load_config(config)
     target = cfg["ssh_target"]
-    transfer = cfg.get("transfer_dir", cfg["remote_work_dir"])
-    work = cfg["remote_work_dir"]
+    attempt_id = _plan_attempt_id(attempt_id)
+    transfer = f"{cfg.get('transfer_dir', cfg['remote_work_dir'])}/{attempt_id}"
+    work = f"{cfg['remote_work_dir']}/{attempt_id}"
     script = Path(__file__).parent / "remote" / "vbx_sim_run.py"
     cmds = [_ssh(target, f"mkdir -p {shlex.quote(transfer)}"),
             ["scp", str(model), str(input_file), str(script), f"{target}:{transfer}/"],
@@ -59,7 +66,7 @@ def sim_plan(model, input_file, output, config):
     return cmds
 
 
-def infer_plan(model, input_file, output, metadata, runner, config, timeout_ms):
+def infer_plan(model, input_file, output, metadata, runner, config, timeout_ms, attempt_id=None):
     input_file = Path(input_file)
     if input_file.suffix == ".npy":
         import numpy as np
@@ -70,7 +77,8 @@ def infer_plan(model, input_file, output, metadata, runner, config, timeout_ms):
         np.ascontiguousarray(samples).tofile(binary)
         input_file = binary
     cfg = load_config(config)
-    target, directory = cfg["ssh_target"], cfg["remote_dir"]
+    attempt_id = _plan_attempt_id(attempt_id)
+    target, directory = cfg["ssh_target"], f"{cfg['remote_dir']}/{attempt_id}"
     paths = [Path(runner), Path(model), Path(input_file)]
     commands = [_ssh(target, f"mkdir -p {shlex.quote(directory)}"),
                 ["scp", *map(str, paths), f"{target}:{directory}/"],
@@ -92,7 +100,9 @@ def run_plan(commands, dry_run=False, manifest=None, timeout_s=None):
 
     def flush():
         if manifest:
-            write_json(manifest, {"commands": records})
+            snapshot = json.loads(Path(manifest).read_text()) if Path(manifest).is_file() else {}
+            snapshot["commands"] = records
+            write_json(manifest, snapshot)
 
     for argv in commands:
         argv = [str(arg) for arg in argv]
