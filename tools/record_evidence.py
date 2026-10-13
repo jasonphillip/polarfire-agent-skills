@@ -8,7 +8,7 @@ import shutil
 import sys
 from pathlib import Path
 
-TEXT = ["attempt.json", "compare.json", "compile.json", "hw.json", "infer.json", "input.manifest.json", "sim.json", "summary.md"]
+TEXT = ["attempt.json", "compare.json", "compile.json", "eval.json", "export.manifest.json", "hw.json", "infer.json", "input.manifest.json", "inspect.json", "sim.json", "summary.md"]
 BINARY = ["hw.bin", "input.int8.npy", "sim.npz"]
 HOME = str(Path.home())
 REPLACE = [
@@ -20,10 +20,19 @@ REPLACE = [
     ("192." + "168.1.214", "<kit>"),
     (HOME, "<home>"),
 ]
+OCTET = r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)"
+PRIVATE_IPV4 = (
+    r"(?<![\d.])\b(?:10\." + OCTET
+    + r"|172\.(?:1[6-9]|2\d|3[01])"
+    + r"|192\." + r"168"
+    + r"|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])"
+    + r")\." + OCTET + r"\." + OCTET + r"\b(?!\.\d)"
+)
 BANNED = re.compile(
     r"bad" + r"willhunt"
     + r"|ja" + r"son"
-    + r"|192\." + r"168\."
+    + r"|[A-Za-z]:[\\/]+" + "Us" + r"ers[\\/]+"
+    + r"|" + PRIVATE_IPV4
     + r"|\b" + "be" + r"e\b"
     + r"|be" + r"e-office"
     + r"|toolshost-" + "be" + "e"
@@ -60,6 +69,9 @@ def main(argv):
         if (src / name).exists():
             shutil.copyfile(src / name, dest / name)
             count += 1
+    if count == 0:
+        print(f"no known record files in {src}", file=sys.stderr)
+        return 1
     print(f"recorded {count} files in {dest}")
     return 0
 
