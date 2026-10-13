@@ -9,7 +9,7 @@ The input contract fixes batch size 1 for export. It states shape, layout, dtype
 An MLP example still accepts a flat `(1,C)` vector in the data contract.
 Its default TFLite input tensor is `(1,1,1,C)` in NHWC order.
 The 1x1 spatial dimensions leave its byte order equal to the flat vector.
-The simulator's NHWC-to-NCHW transpose is the identity on these bytes.
+The simulator accepts model-order input only; it does not transpose NHWC input.
 The default TFLite output is flattened to `(1,out)`.
 ODMR uses 100 PL samples. It normalizes each spectrum to [0,1] by its own minimum and maximum.
 The label is field magnitude in microtesla. Training divides that label by 50. Evaluation restores microtesla.
@@ -27,3 +27,13 @@ These observer values are comparison evidence; the converter does not reuse them
 TFLite against simulator uses a maximum raw INT8 LSB tolerance. Simulator against hardware requires exact raw equality by default.
 `--lsb-tolerance` can relax the hardware comparison. A stage without supplied evidence says `not run`.
 A failed tolerance returns a nonzero exit code.
+
+## Quantized payload
+
+`prepare_input` selects at least one dataset sample and writes `input.int8.npy`, `input.int8.bin`, and `input.manifest.json`.
+The canonical payload is INT8 in model element order: flat `(K,C)` for MLP or NCHW `(K,C,H,W)` for `conv2d_1k`.
+The manifest records sample count, shape, dtype, layout, split, selection method, indices, seed, scale, zero point, and three SHA-256 values.
+`payload_sha256` hashes the C-order sample bytes. `npy_sha256` hashes the NumPy container. `bin_sha256` hashes `input.int8.bin`.
+The simulator loads `input.int8.npy`; the kit receives `input.int8.bin`. Both paths use the bytes of `input.int8.bin`.
+The payload hash appears in `sim.json` and `infer.json` for stages using this manifest, and in `compare.json` when comparison completes.
+Whether this element order is correct for a `conv2d_1k` model on the kit has not been run on hardware; both hardware-validated examples are flat MLP inputs.

@@ -202,7 +202,7 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
     model_path.write_bytes(b"model")
     for shape, values, expected in (
         ((1, 4, 1, 1), [[1, 2, 3, 4]], [[1, 2, 3, 4]]),
-        ((1, 2, 1, 2), [[[[1, 2], [3, 4]]]], [[1, 3, 2, 4]]),
+        ((1, 2, 1, 2), [[[[1, 2]], [[3, 4]]]], [[1, 2, 3, 4]]),
     ):
         model_shape[0] = shape
         input_path = tmp_path / "input.npy"
@@ -213,6 +213,10 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
         runner.main()
         with np.load(output_path) as result:
             assert result["outputs"].tolist() == expected
+    model_shape[0] = (1, 2, 1, 2)
+    np.save(input_path, np.array([[[[1], [2]], [[3], [4]]]], dtype=np.int8))
+    with pytest.raises(ValueError, match="model layout"):
+        runner.main()
 
 
 @pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp"])

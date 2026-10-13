@@ -108,22 +108,6 @@ def _deps_fetch(dry):
             subprocess.run(cmd, check=True)
 
 
-def _prepare_quantized_input(name, run_dir):
-    import numpy as np
-    import tensorflow as tf
-    from .pipeline import load_data
-    data = load_data(run_dir)["test_x"][:1]
-    model = tf.lite.Interpreter(model_path=str(run_dir / "model.tflite"), num_threads=1)
-    model.allocate_tensors()
-    detail = model.get_input_details()[0]
-    scale, zero = detail["quantization"]
-    if scale <= 0:
-        raise ValueError("TFLite input has no quantization scale")
-    value = np.clip(np.rint(data / scale + zero), -128, 127).astype(np.int8)
-    np.save(run_dir / "input.int8.npy", value)
-    value.tofile(run_dir / "input.int8.bin")
-
-
 def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
                   input_file=None, metadata=None, runner=None, timeout_ms=5000):
     from .errors import RemoteCommandError
@@ -137,10 +121,32 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
     result = {"status": "not run", "commands": [], "error": None,
               "config": {"path": str(config), "values": cfg},
               "local_python": "pip-freeze.txt describes the local Python environment, not the tools host"}
+    if stage in ("sim", "infer") and run_dir:
+        payload_manifest = Path(run_dir) / "input.manifest.json"
+        if payload_manifest.is_file():
+            from .payload import payload_sha256
+            import numpy as np
+            payload = json.loads(payload_manifest.read_text())
+            binary = Path(run_dir) / "input.int8.bin"
+            npy = Path(run_dir) / "input.int8.npy"
+            expected = npy if stage == "sim" else binary
+            if Path(input_file).resolve() != expected.resolve():
+                raise ValueError(f"{stage} input must be the canonical input {expected.name}")
+            samples = np.load(npy, allow_pickle=False)
+            if (payload_sha256(samples) != payload["payload_sha256"] or
+                    sha256(binary) != payload["bin_sha256"] or
+                    binary.read_bytes() != np.ascontiguousarray(samples).tobytes()):
+                raise ValueError("payload hash mismatch")
+            result["payload_sha256"] = payload["payload_sha256"]
     if stage == "infer":
         runner_path = Path(runner)
         result["runner_sha256"] = sha256(runner_path) if runner_path.is_file() else None
     try:
+        if stage == "sim" and input_file and Path(input_file).is_file():
+            import numpy as np
+            samples = np.load(input_file, allow_pickle=False)
+            if samples.dtype != np.int8 or samples.size < 1:
+                raise ValueError("sim input must contain K >= 1 int8 samples")
         if stage == "compile":
             commands = compile_plan(model, output, config)
         elif stage == "sim":
@@ -250,12 +256,12 @@ def _dispatch(args):
                 elif stage == "compile":
                     result = _remote_stage(stage, run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost, run_dir)
                 elif stage == "sim":
-                    _prepare_quantized_input(args.name, run_dir)
+                    steps.prepare_input(args.name, run_dir)
                     result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "sim.npz", args.toolshost,
                                            run_dir, input_file=run_dir / "input.int8.npy")
                 elif stage == "infer":
                     result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "hw.bin", args.kit,
-                                           run_dir, input_file=run_dir / "input.int8.npy",
+                                           run_dir, input_file=run_dir / "input.int8.bin",
                                            metadata=run_dir / "hw.json", runner=ROOT / "hw" / "vbx_run")
                 else:
                     result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz",

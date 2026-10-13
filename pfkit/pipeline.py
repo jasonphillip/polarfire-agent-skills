@@ -251,6 +251,30 @@ def load_hardware_outputs(path, shape):
     return raw.reshape(shape)
 
 
+def prepare_input(name, run_dir, samples=1, split="test", selection="first", seed=None):
+    from .payload import quantize, to_model_layout, write_payload
+    if samples < 1:
+        raise ValueError("payload must contain K >= 1 int8 samples")
+    if selection not in ("first", "random"):
+        raise ValueError(f"Unknown sample selection: {selection}")
+    import tensorflow as tf
+    cfg, _ = example_module(name)
+    run_dir = Path(run_dir)
+    values = load_data(run_dir)[f"{split}_x"]
+    if samples > len(values):
+        raise ValueError(f"requested {samples} samples from {split}, only {len(values)} available")
+    indices = (np.arange(samples) if selection == "first" else
+               np.random.default_rng(seed).choice(len(values), samples, replace=False))
+    interpreter = tf.lite.Interpreter(model_path=str(run_dir / "model.tflite"), num_threads=1)
+    interpreter.allocate_tensors()
+    scale, zero = interpreter.get_input_details()[0]["quantization"]
+    array = to_model_layout(quantize(values[indices], scale, zero), cfg["adapter"])
+    return write_payload(run_dir, array,
+                         {"split": split, "method": selection,
+                          "indices": [int(index) for index in indices], "seed": seed},
+                         {"scale": float(scale), "zero_point": int(zero)})
+
+
 def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scope="requested"):
     if scope not in ("requested", "full"):
         raise ValueError(f"Unknown comparison scope: {scope}")
@@ -264,11 +288,30 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
             return report
     import tensorflow as tf
     import torch
+    from .payload import payload_sha256, quantize, to_model_layout
     cfg, _ = example_module(name)
     parts = load_data(run_dir)
     sim_raw = np.load(sim)["outputs"] if sim else None
     sample_count = len(sim_raw) if sim_raw is not None else 1
-    x = np.load(inputs) if inputs else parts["test_x"][:sample_count]
+    payload_manifest = Path(run_dir) / "input.manifest.json"
+    manifest = None
+    if inputs is None and payload_manifest.is_file():
+        manifest = json.loads(payload_manifest.read_text())
+        payload = np.load(Path(run_dir) / "input.int8.npy", allow_pickle=False)
+        if (payload_sha256(payload) != manifest["payload_sha256"] or
+                list(payload.shape) != manifest["shape"] or
+                payload.dtype != np.int8):
+            raise ValueError("payload hash mismatch")
+        if (Path(run_dir) / "input.int8.bin").read_bytes() != np.ascontiguousarray(payload).tobytes():
+            raise ValueError("payload hash mismatch")
+        selected = manifest["selection"]
+        indices = selected["indices"]
+        if len(indices) != len(payload) or len(indices) < 1:
+            raise ValueError("payload selection/sample count mismatch")
+        x = parts[f"{selected['split']}_x"][indices]
+        sample_count = len(payload) if sim_raw is None else sample_count
+    else:
+        x = np.load(inputs) if inputs else parts["test_x"][:sample_count]
     if len(x) != sample_count and sim_raw is not None:
         raise ValueError(f"input/simulator sample count mismatch: {len(x)} != {sample_count}")
     if len(x.shape) == len(cfg["input"]["shape"]) - 1:
@@ -280,15 +323,18 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
     interpreter.allocate_tensors()
     i, o = interpreter.get_input_details()[0], interpreter.get_output_details()[0]
     tflite_raw, tflite_float = [], []
-    for sample in x:
+    scale, zero = i["quantization"]
+    selected_quantized = to_model_layout(quantize(x, scale, zero), cfg["adapter"])
+    if manifest is not None and (payload_sha256(selected_quantized) != manifest["payload_sha256"] or
+                                 manifest["quantization"] != {"scale": float(scale), "zero_point": int(zero)}):
+        raise ValueError("payload hash mismatch")
+    for sample in selected_quantized:
         value = sample[None]
         if cfg["adapter"] == "conv2d_1k":
             value = value.transpose(0, 2, 3, 1)
         elif cfg["adapter"] == "mlp" and len(i["shape"]) == 4:
             value = value.reshape(i["shape"])
-        scale, zero = i["quantization"]
-        quantized = np.clip(np.rint(value / scale + zero), -128, 127).astype(np.int8)
-        interpreter.set_tensor(i["index"], quantized); interpreter.invoke()
+        interpreter.set_tensor(i["index"], value); interpreter.invoke()
         raw = interpreter.get_tensor(o["index"])
         tflite_raw.append(raw[0]); tflite_float.append((raw[0].astype(np.float32) - o["quantization"][1]) * o["quantization"][0] * cfg["output"]["target_scale"])
     raw = np.asarray(tflite_raw)
@@ -300,5 +346,8 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
     report = compare_arrays(floated, np.asarray(tflite_float), raw, sim_raw, hw_raw,
                             cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"],
                             lsb_tolerance, required=required)
+    if manifest is not None:
+        report.update(samples=len(selected_quantized), selection=manifest["selection"],
+                      payload_sha256=manifest["payload_sha256"])
     write_json(Path(run_dir) / "compare.json", report)
     return report
