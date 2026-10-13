@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from .pipeline import ROOT
 
+DEFAULT_RUNNER = ROOT / "hw" / "vbx_run"
+
 
 def _run_dir(args):
     if not args.run_dir:
@@ -66,7 +68,7 @@ def parser():
     infer.add_argument("--input", required=True)
     infer.add_argument("--output", required=True)
     infer.add_argument("--json", required=True)
-    infer.add_argument("--runner", default=str(ROOT / "hw" / "vbx_run"))
+    infer.add_argument("--runner", default=str(DEFAULT_RUNNER))
     infer.add_argument("--config", default=str(ROOT / "kit.yaml"))
     infer.add_argument("--timeout-ms", type=int, default=5000)
     infer.add_argument("--run-dir")
@@ -93,6 +95,7 @@ def parser():
     example = sub.add_parser("example")
     example_sub = example.add_subparsers(dest="example_command", required=True)
     run = example_sub.add_parser("run")
+    run.set_defaults(runner=DEFAULT_RUNNER)
     run.add_argument("name")
     run.add_argument("--until", choices=("data", "train", "eval", "export", "inspect", "compile", "sim", "infer", "compare"), default="inspect")
     run.add_argument("--run-dir")
@@ -373,7 +376,7 @@ def _dispatch(args):
         stage = "not run"
         try:
             if sequence.index(args.until) >= sequence.index("infer"):
-                _require_runner(ROOT / "hw" / "vbx_run")
+                _require_runner(args.runner)
             print(f"samples: {args.samples}" + (" (one-sample fast path)" if args.samples == 1 else ""),
                   flush=True)
             for stage in sequence[:sequence.index(args.until)+1]:
@@ -400,7 +403,7 @@ def _dispatch(args):
                 elif stage == "infer":
                     result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "hw.bin", args.kit,
                                            run_dir, input_file=run_dir / "input.int8.bin",
-                                           metadata=run_dir / "hw.json", runner=ROOT / "hw" / "vbx_run",
+                                           metadata=run_dir / "hw.json", runner=args.runner,
                                            attempt_id=attempt_id)
                 else:
                     result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz",

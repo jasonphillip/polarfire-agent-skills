@@ -85,6 +85,7 @@ def test_example_preflights_missing_runner_before_remote_stages(tmp_path, monkey
     from pfkit import cli, pipeline
 
     monkeypatch.setattr(cli, "ROOT", tmp_path / "missing-root")
+    monkeypatch.setattr(cli, "DEFAULT_RUNNER", cli.ROOT / "hw" / "vbx_run")
     monkeypatch.setattr(cli, "_remote_stage", lambda *a, **k: pytest.fail("remote stage started"))
     monkeypatch.setattr("pfkit.reporting.report", lambda directory: tmp_path / "summary.md")
     monkeypatch.setattr(pipeline, "data", lambda *a, **k: None)

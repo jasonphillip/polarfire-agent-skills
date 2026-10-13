@@ -323,14 +323,14 @@ def test_examples_through_inspect(name, tmp_path):
     assert set(op["operator"] for op in result["operators"]) <= {"CONV_2D", "RESHAPE"}
 
 
-def test_cli_remote_dry_runs(tmp_path):
+def test_cli_remote_dry_runs(tmp_path, dummy_runner):
     import subprocess
     import sys
     root = Path(__file__).resolve().parents[1]
     cases = [
         (["compile", "m.tflite", "--output", "m.vnnx", "--dry-run"], "vnnx_compile -c V250 -t"),
         (["sim", "m.vnnx", "--input", "in.npy", "--output", "out.npz", "--dry-run"], "vbx_sim_run.py"),
-        (["infer", "m.vnnx", "--input", "in.bin", "--output", "out.bin", "--json", "meta.json", "--dry-run"], "--timeout-ms 5000 --json"),
+        (["infer", "m.vnnx", "--input", "in.bin", "--output", "out.bin", "--json", "meta.json", "--runner", str(dummy_runner), "--dry-run"], "--timeout-ms 5000 --json"),
     ]
     for args, expected in cases:
         completed = subprocess.run([sys.executable, "-m", "pfkit", *args], cwd=root, text=True, capture_output=True)

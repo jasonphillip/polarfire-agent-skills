@@ -5,6 +5,16 @@ import importlib
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def dummy_runner(tmp_path, monkeypatch):
+    from pfkit import cli
+
+    runner = tmp_path / "vbx_run"
+    runner.write_bytes(b"dummy runner")
+    monkeypatch.setattr(cli, "DEFAULT_RUNNER", runner)
+    return runner
+
+
 def pytest_collection_modifyitems(items):
     for item in items:
         if not any(item.get_closest_marker(name) for name in

@@ -161,23 +161,23 @@ def test_compile_timeout_default_is_unbounded():
     assert load_config(ROOT / "toolshost.yaml", "toolshost")["timeouts"]["compile"] is None
 
 
-def test_stage_uses_configured_timeout(tmp_path, monkeypatch):
+def test_stage_uses_configured_timeout(tmp_path, monkeypatch, dummy_runner):
     from pfkit import cli, remote_ops
     cfg = tmp_path / "kit.yaml"
     cfg.write_text("ssh_target: kit\nremote_dir: /tmp/pfkit\ntimeouts: {infer: 7}\n")
     observed = []
     monkeypatch.setattr(remote_ops, "run_plan", lambda commands, **kwargs: observed.append(kwargs["timeout_s"]) or [])
     cli._remote_stage("infer", "m.vnnx", tmp_path / "hw.bin", cfg, dry_run=True,
-                      input_file="in.bin", metadata=tmp_path / "hw.json", runner=ROOT / "hw" / "vbx_run")
+                      input_file="in.bin", metadata=tmp_path / "hw.json", runner=dummy_runner)
     assert observed == [7]
 
 
-def test_execution_creates_output_directories_only_when_running(tmp_path, monkeypatch):
+def test_execution_creates_output_directories_only_when_running(tmp_path, monkeypatch, dummy_runner):
     from pfkit import cli, remote_ops
     monkeypatch.setattr(remote_ops, "run_plan", lambda commands, **kwargs: [])
     output = tmp_path / "outputs" / "hw.bin"
     metadata = tmp_path / "metadata" / "hw.json"
-    kwargs = dict(input_file="in.bin", metadata=metadata, runner=ROOT / "hw" / "vbx_run")
+    kwargs = dict(input_file="in.bin", metadata=metadata, runner=dummy_runner)
     cli._remote_stage("infer", "m.vnnx", output, ROOT / "kit.yaml", dry_run=True, **kwargs)
     assert not output.parent.exists() and not metadata.parent.exists()
     with pytest.raises(ValueError, match="output missing"):

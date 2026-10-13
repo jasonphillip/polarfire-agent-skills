@@ -127,7 +127,7 @@ def test_prepare_and_compare_use_selected_payload(tmp_path, monkeypatch):
         pipeline.compare("signal-freq", tmp_path, sim=sim, hw=hw)
 
 
-def test_stage_records_hash_only_for_canonical_input(tmp_path):
+def test_stage_records_hash_only_for_canonical_input(tmp_path, dummy_runner):
     from pfkit.cli import _remote_stage
 
     values = np.arange(4, dtype=np.int8).reshape(1, 4)
@@ -139,7 +139,7 @@ def test_stage_records_hash_only_for_canonical_input(tmp_path):
     ):
         record = _remote_stage(stage, tmp_path / "model.vnnx", tmp_path / "out.bin",
                                config, tmp_path, dry_run=True, input_file=source,
-                               metadata=tmp_path / "hw.json", runner=ROOT / "hw" / "vbx_run")
+                               metadata=tmp_path / "hw.json", runner=dummy_runner)
         assert record["payload_sha256"] == manifest["payload_sha256"]
     other = tmp_path / "other.npy"
     np.save(other, values)
