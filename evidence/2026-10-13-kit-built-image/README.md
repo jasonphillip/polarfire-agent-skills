@@ -3,7 +3,7 @@
 The kit was programmed with the image this repository's build script made on the tools host (`evidence/2026-10-12-libero-build/`), replacing the case study's seed7 V250 image. Every result here is on the new image. Results on the case-study image stay in their own folders.
 
 - Image: `Vectorblox_FD0AEBB95776A726D3D.job`, sha256 `6d5cae6c30053ed5d16325f9cc03e57eb706e6ab3f3f9306d741cad02d711c6c`, CoreVectorBlox 2.0.1 V250, programmed 2026-10-13 16:18:06 UTC (`image.json`, `program.log`). The programmed fabric digest equals the build record.
-- Boot: the kit reset itself after programming and answered SSH within 30 s; `vbx@60030000` and the DMA buffers were present (`boot-checks.md`).
+- Boot: the kit reset itself after programming and answered SSH 31 s after programming finished; `vbx@60030000` and the DMA buffers were present (`boot-checks.md`).
 - Configuration used for every run, the overlay check and the audit of the old PID node: `test-configuration.md`.
 - Before programming: `identity-before.md`; gate baseline: `baseline.txt`.
 
