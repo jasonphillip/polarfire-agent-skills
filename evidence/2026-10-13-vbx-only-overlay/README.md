@@ -19,7 +19,7 @@ On the kit, in `/root/bringup/overlay-backup-2026-10-13/` (copies also taken off
 
 | file on the kit | new sha256 | change |
 |---|---|---|
-| `/root/bringup/vbx_only.dtso` | `b245f6583c65e31eaf14e990f0b68b7c3eb840259bf15f2d13d552293fea8849` | copy of `hw/overlay/vbx_only.dtso` (identical hash) |
+| `/root/bringup/vbx_only.dtso` | `b245f6583c65e31eaf14e990f0b68b7c3eb840259bf15f2d13d552293fea8849` | copy of `hw/overlay/vbx_only.dtso` as of commit `53c8a56` (identical hash; a later commit changed only its header comment) |
 | `/root/bringup/vbx_only.dtbo` | `2e611390ac9e3822af36930eb45773dc3248464d169fca613be4e7c81d9c31bc` | built on the kit with `dtc -@ -O dtb -o vbx_only.dtbo vbx_only.dtso -Wno-reg_format -Wno-avoid_default_addr_size` (DTC 1.7.0); one node `vbx@60030000`, interrupt 124, `plic` fixup |
 | `/root/bringup/apply-vbx-overlay.sh` | `b15628819a6ea3005624a374822aee6f8323caec16c282d8f47c9c34c3dfa958` | applies `vbx_only` only; refuses if any other overlay is already applied (`kit-files/apply-vbx-overlay.sh`) |
 | `/etc/systemd/system/vbx-overlay.service` | `ec5520ba86f01af462875a89104eab18ef9cbcecdf24d4e20fa92864d2c3b562` | same unit name; condition is now `vbx_only.dtbo` (`kit-files/vbx-overlay.service`) |

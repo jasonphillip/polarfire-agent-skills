@@ -15,7 +15,8 @@ Use one run directory for all stages of one model.
 Configure `toolshost.yaml` for compile and sim.
 Configure `kit.yaml` and build `hw/vbx_run` before infer.
 The kit image needs the V250 overlay and uncached DMA pool.
-Check the UIO name `vbx` and the DMA device before infer.
+Check for a UIO name starting with `vbx`, its map0 address `0x60030000`, and the DMA device before infer.
+The runner requires the exact argument `--uio-name vbx` (`hw/vbx_run.c:103-123`).
 The runner receives already quantized input bytes.
 
 ## Remote stages

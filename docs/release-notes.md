@@ -1,5 +1,7 @@
 # v0.1.0 (initial, scoped)
 
+2026-10-13: The kit-built image now boots `vbx_only` instead of seed7; both 64-sample examples passed with byte-identical outputs (`evidence/2026-10-13-vbx-only-overlay/README.md`).
+
 ## 2026-10-13: kit-built image validated
 
 FlashPro Express programmed the kit-built CoreVectorBlox 2.0.1 V250 job using PROGRAM only. The kit reset and returned. `signal-freq` and `odmr-mlp` each passed 64 samples with outputs byte-identical to their case-study-image runs. Batch replay matched those outputs byte for byte. `odmr-fcnn` kept exact hardware parity on both images but failed its float-to-INT8 conversion tolerance. See `evidence/2026-10-13-kit-built-image/README.md`.
