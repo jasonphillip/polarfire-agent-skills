@@ -1,0 +1,10 @@
+[Unit]
+Description=Apply vbx_only VectorBlox DT overlay (vbx@60030000; no PID node)
+After=local-fs.target
+ConditionPathExists=/root/bringup/vbx_only.dtbo
+[Service]
+Type=oneshot
+ExecStart=/root/bringup/apply-vbx-overlay.sh
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

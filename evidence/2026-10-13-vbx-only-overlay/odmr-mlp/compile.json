@@ -1,0 +1,93 @@
+{
+  "attempt_id": "20261013-173106-4a1c11ee",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "mkdir -p pfkit-work/20261013-173106-4a1c11ee"
+      ],
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work/20261013-173106-4a1c11ee'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:11.001474+00:00",
+      "started_utc": "2026-10-13T17:31:10.778048+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "reports/20261013-133106-odmr-mlp-vbxonly/model.tflite",
+        "<tools-host>:pfkit-work/20261013-173106-4a1c11ee/model.tflite"
+      ],
+      "command": "scp reports/20261013-133106-odmr-mlp-vbxonly/model.tflite <tools-host>:pfkit-work/20261013-173106-4a1c11ee/model.tflite",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:11.231276+00:00",
+      "started_utc": "2026-10-13T17:31:11.001776+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "wsl.exe -d Ubuntu -- bash -lc 'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-173106-4a1c11ee && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/20261013-173106-4a1c11ee/model.tflite -o <tools-host-home>/pfkit-work/20261013-173106-4a1c11ee/model.vnnx'"
+      ],
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-173106-4a1c11ee && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/20261013-173106-4a1c11ee/model.tflite -o <tools-host-home>/pfkit-work/20261013-173106-4a1c11ee/model.vnnx'\"'\"''",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:14.051012+00:00",
+      "started_utc": "2026-10-13T17:31:11.231583+00:00",
+      "stderr": "2026-10-13 13:31:11.606719: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.\n2026-10-13 13:31:11.625535: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nINFO: Created TensorFlow Lite XNNPACK delegate for CPU.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<tools-host>:pfkit-work/20261013-173106-4a1c11ee/model.vnnx",
+        "reports/20261013-133106-odmr-mlp-vbxonly/model.vnnx"
+      ],
+      "command": "scp <tools-host>:pfkit-work/20261013-173106-4a1c11ee/model.vnnx reports/20261013-133106-odmr-mlp-vbxonly/model.vnnx",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:14.287209+00:00",
+      "started_utc": "2026-10-13T17:31:14.051333+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/toolshost.yaml",
+    "values": {
+      "command_prefix": "wsl.exe -d Ubuntu --",
+      "remote_work_dir": "<tools-host-home>/pfkit-work",
+      "size_config": "V250",
+      "ssh_target": "<tools-host>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      },
+      "transfer_dir": "pfkit-work",
+      "venv_activate": "~/vbx-env/bin/activate"
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "bbc5ab8ac9a466fa531211670df133046232d278d5c358906fc2a58ef4f37914",
+    "payload_sha256": null
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-133106-odmr-mlp-vbxonly/model.vnnx",
+    "sha256": "fbb97aeaa2eb14322115cd26aae41192fbbcdf95f35f644e1ddc509e73ecfafc",
+    "size_bytes": 22496
+  },
+  "status": "completed"
+}
