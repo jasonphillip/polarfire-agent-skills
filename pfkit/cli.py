@@ -1,17 +1,28 @@
 """Command line entry points for reproducible pipeline stages."""
 from __future__ import annotations
 import argparse
+import hashlib
 import json
+import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from .pipeline import ROOT
+
+DEFAULT_RUNNER = ROOT / "hw" / "vbx_run"
 
 
 def _run_dir(args):
     if not args.run_dir:
         raise ValueError("--run-dir is required for this stage")
     return Path(args.run_dir)
+
+
+def _positive_samples(value):
+    count = int(value)
+    if count < 1:
+        raise argparse.ArgumentTypeError("samples must be >= 1")
+    return count
 
 
 def parser():
@@ -33,6 +44,7 @@ def parser():
             stage.add_argument("--epochs", type=int)
         if name == "export":
             stage.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
+            stage.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     inspect = sub.add_parser("inspect")
     inspect.add_argument("model")
     inspect.add_argument("--run-dir")
@@ -56,11 +68,20 @@ def parser():
     infer.add_argument("--input", required=True)
     infer.add_argument("--output", required=True)
     infer.add_argument("--json", required=True)
-    infer.add_argument("--runner", default=str(ROOT / "hw" / "vbx_run"))
+    infer.add_argument("--runner", default=str(DEFAULT_RUNNER))
     infer.add_argument("--config", default=str(ROOT / "kit.yaml"))
     infer.add_argument("--timeout-ms", type=int, default=5000)
     infer.add_argument("--run-dir")
     infer.add_argument("--dry-run", action="store_true")
+    infer.add_argument("--overwrite-payload", action="store_true",
+                       help="replace an adjacent .bin when it differs from the .npy input")
+    prepare = sub.add_parser("prepare-input")
+    prepare.add_argument("example")
+    prepare.add_argument("--run-dir", required=True)
+    prepare.add_argument("--samples", type=_positive_samples, default=1)
+    prepare.add_argument("--split", choices=("test",), default="test")
+    prepare.add_argument("--selection", choices=("first", "random"), default="first")
+    prepare.add_argument("--seed", type=int)
     compare = sub.add_parser("compare")
     compare.add_argument("example")
     compare.add_argument("--run-dir", required=True)
@@ -68,17 +89,22 @@ def parser():
     compare.add_argument("--sim")
     compare.add_argument("--hw")
     compare.add_argument("--lsb-tolerance", type=int, default=0)
+    compare.add_argument("--scope", choices=("requested", "full"), default="requested")
     report = sub.add_parser("report")
     report.add_argument("--run-dir", required=True)
     example = sub.add_parser("example")
     example_sub = example.add_subparsers(dest="example_command", required=True)
     run = example_sub.add_parser("run")
+    run.set_defaults(runner=DEFAULT_RUNNER)
     run.add_argument("name")
     run.add_argument("--until", choices=("data", "train", "eval", "export", "inspect", "compile", "sim", "infer", "compare"), default="inspect")
     run.add_argument("--run-dir")
     run.add_argument("--toolshost", default=str(ROOT / "toolshost.yaml"), help="tools host config for compile and sim")
     run.add_argument("--kit", default=str(ROOT / "kit.yaml"), help="kit config for infer")
     run.add_argument("--full", action="store_true")
+    run.add_argument("--samples", type=_positive_samples, default=1)
+    run.add_argument("--selection", choices=("first", "random"), default="first")
+    run.add_argument("--seed", type=int)
     run.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     run.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
     run.add_argument("--allow-fc-chain", action="store_true", help="allow measured SDK 2.0.3 simulator failure")
@@ -107,20 +133,183 @@ def _deps_fetch(dry):
             subprocess.run(cmd, check=True)
 
 
-def _prepare_quantized_input(name, run_dir):
+def _stamp_local_stage(run_dir, stage, attempt_id=None):
+    from .attempt import manual
+    from .pipeline import sha256, write_json
+
+    names = {"data": "dataset.manifest.json", "train": "training.json",
+             "eval": "eval.json", "export": "export.manifest.json", "inspect": "inspect.json"}
+    path = Path(run_dir) / names[stage]
+    if not path.is_file():
+        return
+    record = json.loads(path.read_text())
+    source = {"train": "dataset.npz", "eval": "model.pt",
+              "export": "model.pt", "inspect": "model.tflite"}.get(stage)
+    source_path = Path(run_dir) / source if source else None
+    record.update(status="completed", attempt_id=attempt_id or manual(run_dir)["attempt_id"],
+                  inputs={"model_sha256": sha256(source_path) if source_path and source_path.is_file() else None,
+                          "payload_sha256": None})
+    write_json(path, record)
+
+
+def _payload_for_infer(input_file, dry_run=False, overwrite=False):
+    """Return a binary payload path, writing it only for an executing .npy input."""
     import numpy as np
-    import tensorflow as tf
-    from .pipeline import load_data
-    data = load_data(run_dir)["test_x"][:1]
-    model = tf.lite.Interpreter(model_path=str(run_dir / "model.tflite"), num_threads=1)
-    model.allocate_tensors()
-    detail = model.get_input_details()[0]
-    scale, zero = detail["quantization"]
-    if scale <= 0:
-        raise ValueError("TFLite input has no quantization scale")
-    value = np.clip(np.rint(data / scale + zero), -128, 127).astype(np.int8)
-    np.save(run_dir / "input.int8.npy", value)
-    value.tofile(run_dir / "input.int8.bin")
+
+    source = Path(input_file)
+    if source.suffix != ".npy":
+        return source
+    samples = np.load(source, allow_pickle=False)
+    if samples.dtype != np.int8 or samples.ndim < 2 or samples.shape[0] < 1:
+        raise ValueError("inference input .npy must contain K >= 1 int8 samples")
+    data = np.ascontiguousarray(samples).tobytes()
+    binary = source.with_suffix(".bin")
+    if dry_run:
+        print(f"would write {binary} ({samples.shape[0]} samples, {len(data)} bytes, "
+              f"sha256 {hashlib.sha256(data).hexdigest()})")
+    elif binary.is_file():
+        if binary.read_bytes() != data:
+            if not overwrite:
+                raise ValueError(f"{binary} exists with different content; pass --overwrite-payload")
+            binary.write_bytes(data)
+    else:
+        binary.write_bytes(data)
+    return binary
+
+
+def _require_runner(runner):
+    path = Path(runner)
+    if not path.is_file():
+        label = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+        raise ValueError(f"runner not found: {label}; build it on the tools host (docs/hardware.md, Runner)")
+
+
+def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
+                  input_file=None, metadata=None, runner=None, timeout_ms=5000,
+                  attempt_id=None, overwrite_payload=False):
+    from . import attempt
+    from .errors import RemoteCommandError
+    from .pipeline import sha256, write_json
+    from .remote_ops import _scp, compile_plan, infer_plan, load_config, run_plan, sim_plan
+
+    if stage == "infer":
+        _require_runner(runner)
+        input_file = _payload_for_infer(input_file, dry_run=dry_run, overwrite=overwrite_payload)
+
+    manifest = Path(run_dir) / f"{stage}.json" if run_dir and not dry_run else None
+    if manifest:
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        attempt_id = attempt_id or attempt.manual(run_dir)["attempt_id"]
+    else:
+        existing = attempt.current(run_dir) if run_dir else None
+        attempt_id = attempt_id or (existing["attempt_id"] if existing else None) or datetime.now(timezone.utc).strftime("manual-%Y%m%d-%H%M%S-") + secrets.token_hex(4)
+    cfg = load_config(config, "kit" if stage == "infer" else "toolshost")
+    result = {"status": "not run", "commands": [], "error": None,
+              "attempt_id": attempt_id, "inputs": {
+                  "model_sha256": sha256(model) if Path(model).is_file() else None,
+                  "payload_sha256": None},
+              "config": {"path": str(config), "values": cfg},
+              "local_python": "pip-freeze.txt describes the local Python environment, not the tools host"}
+    if stage in ("sim", "infer") and run_dir:
+        payload_manifest = Path(run_dir) / "input.manifest.json"
+        if payload_manifest.is_file():
+            from .payload import payload_sha256
+            import numpy as np
+            payload = json.loads(payload_manifest.read_text())
+            binary = Path(run_dir) / "input.int8.bin"
+            npy = Path(run_dir) / "input.int8.npy"
+            expected = npy if stage == "sim" else binary
+            if Path(input_file).resolve() != expected.resolve():
+                raise ValueError(f"{stage} input must be the canonical input {expected.name}")
+            samples = np.load(npy, allow_pickle=False)
+            if (payload_sha256(samples) != payload["payload_sha256"] or
+                    sha256(binary) != payload["bin_sha256"] or
+                    binary.read_bytes() != np.ascontiguousarray(samples).tobytes()):
+                raise ValueError("payload hash mismatch")
+            result["payload_sha256"] = payload["payload_sha256"]
+            result["inputs"]["payload_sha256"] = payload["payload_sha256"]
+    elif stage in ("sim", "infer") and input_file and Path(input_file).is_file():
+        if Path(input_file).suffix == ".npy":
+            from .payload import payload_sha256
+            import numpy as np
+            result["inputs"]["payload_sha256"] = payload_sha256(np.load(input_file, allow_pickle=False))
+        else:
+            result["inputs"]["payload_sha256"] = sha256(input_file)
+    if stage == "infer":
+        runner_path = Path(runner)
+        result["runner_sha256"] = sha256(runner_path) if runner_path.is_file() else None
+        result["inputs"]["runner_sha256"] = result["runner_sha256"]
+    try:
+        if stage == "sim" and input_file and Path(input_file).is_file():
+            import numpy as np
+            samples = np.load(input_file, allow_pickle=False)
+            if samples.dtype != np.int8 or samples.size < 1:
+                raise ValueError("sim input must contain K >= 1 int8 samples")
+        if stage == "compile":
+            commands = compile_plan(model, output, config, attempt_id=attempt_id)
+        elif stage == "sim":
+            commands = sim_plan(model, input_file, output, config, attempt_id=attempt_id)
+        else:
+            commands = infer_plan(model, input_file, output, metadata, runner, config, timeout_ms,
+                                  attempt_id=attempt_id)
+        if manifest:
+            write_json(manifest, result)
+        if not dry_run:
+            Path(output).parent.mkdir(parents=True, exist_ok=True)
+            if stage == "infer":
+                Path(metadata).parent.mkdir(parents=True, exist_ok=True)
+        result["commands"] = run_plan(commands, dry_run=dry_run, manifest=manifest,
+                                      timeout_s=cfg["timeouts"][stage])
+        if not dry_run:
+            if not Path(output).is_file():
+                raise ValueError("output missing after transfer")
+            if stage == "infer":
+                if not Path(metadata).is_file():
+                    raise ValueError("runner JSON missing after transfer")
+                details = json.loads(Path(metadata).read_text())
+                samples, completed = details["samples"], details["completed"]
+                npu_error, exit_code = details["npu_error"], details["exit_code"]
+                if completed != samples or npu_error != 0 or exit_code != 0:
+                    raise ValueError(f"runner completed {completed} of {samples}, npu_error {npu_error}, exit {exit_code}")
+                descriptors = details["outputs"]
+                if not descriptors or any(type(item.get("offset")) is not int or item["offset"] < 0 or
+                                          type(item.get("bytes")) is not int or item["bytes"] < 1
+                                          for item in descriptors):
+                    raise ValueError("runner JSON has invalid output descriptors")
+                per_sample = max(item["offset"] + item["bytes"] for item in descriptors)
+                expected_size = samples * per_sample
+                actual_size = Path(output).stat().st_size
+                if actual_size != expected_size:
+                    raise ValueError(f"hw.bin size {actual_size} bytes; expected {expected_size} bytes "
+                                     f"({samples} samples x {per_sample} bytes)")
+            result["output"] = {"path": str(output), "size_bytes": Path(output).stat().st_size,
+                                "sha256": sha256(output)}
+            result["status"] = "completed"
+    except Exception as error:
+        result["status"] = "failed"
+        result["error"] = str(error)
+        if isinstance(error, RemoteCommandError):
+            result["commands"] = list(error.records)
+            if stage == "infer":
+                target, directory = cfg["ssh_target"], f"{cfg['remote_dir']}/{attempt_id}"
+                transfer = ["scp", _scp(target, f"{directory}/{Path(metadata).name}"), str(metadata)]
+                retrieval = {"attempted": True, "path": str(metadata), "exit_code": "not run"}
+                try:
+                    retrieved = run_plan([transfer], timeout_s=cfg["timeouts"][stage])
+                    result["commands"].extend(retrieved)
+                    retrieval["exit_code"] = retrieved[0]["exit_code"]
+                except RemoteCommandError as retrieval_error:
+                    result["commands"].extend(retrieval_error.records)
+                    retrieval["exit_code"] = retrieval_error.records[-1]["exit_code"]
+                    retrieval["error"] = str(retrieval_error)
+                result["retrieval"] = retrieval
+        error.records = result["commands"]
+        if manifest:
+            write_json(manifest, result)
+        raise
+    if manifest:
+        write_json(manifest, result)
+    return result
 
 
 def _dispatch(args):
@@ -128,13 +317,24 @@ def _dispatch(args):
     if args.command == "deps":
         return _deps_fetch(args.dry_run)
     if args.command == "data":
-        return steps.data(args.example, _run_dir(args), args.full, args.import_path)
+        result = steps.data(args.example, _run_dir(args), args.full, args.import_path)
+        _stamp_local_stage(args.run_dir, "data")
+        return result
     if args.command == "train":
-        return steps.train(args.example, _run_dir(args), args.full, args.epochs)
+        result = steps.train(args.example, _run_dir(args), args.full, args.epochs)
+        _stamp_local_stage(args.run_dir, "train")
+        return result
     if args.command == "eval":
-        return steps.evaluate(args.example, _run_dir(args))
+        result = steps.evaluate(args.example, _run_dir(args))
+        _stamp_local_stage(args.run_dir, "eval")
+        return result
+    if args.command == "prepare-input":
+        return steps.prepare_input(args.example, _run_dir(args), samples=args.samples,
+                                   split=args.split, selection=args.selection, seed=args.seed)
     if args.command == "export":
-        return steps.export(args.example, _run_dir(args), args.form)
+        result = steps.export(args.example, _run_dir(args), args.form, sdk_root=args.sdk_root)
+        _stamp_local_stage(args.run_dir, "export")
+        return result
     if args.command == "inspect":
         from .inspect import inspect_model, print_inspection
         result = inspect_model(args.model, args.sdk_root)
@@ -144,77 +344,96 @@ def _dispatch(args):
         blocking = [flag for flag in result["blocking_flags"] if not (args.allow_fc_chain and flag.startswith("fc_chain_fused_activation"))]
         if result["unsupported"] or result["limit_violations"] or blocking:
             raise ValueError(f"Unsupported TFLite operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
+        if args.run_dir:
+            _stamp_local_stage(args.run_dir, "inspect")
         return result
     if args.command in ("compile", "sim", "infer"):
-        from .remote_ops import compile_plan, sim_plan, infer_plan, run_plan
-        from .pipeline import sha256, write_json
-        if args.command == "compile":
-            commands = compile_plan(args.model, args.output, args.config)
-        elif args.command == "sim":
-            commands = sim_plan(args.model, args.input, args.output, args.config)
-        else:
-            commands = infer_plan(args.model, args.input, args.output, args.json, args.runner, args.config, args.timeout_ms)
-        records = run_plan(commands, args.dry_run)
-        if args.run_dir:
-            result = {"commands": records, "status": "not run" if args.dry_run else "completed"}
-            if not args.dry_run:
-                result["output"] = {"path": args.output, "size_bytes": Path(args.output).stat().st_size,
-                                    "sha256": sha256(args.output)}
-            write_json(Path(args.run_dir) / f"{args.command}.json", result)
+        _remote_stage(args.command, args.model, args.output, args.config, args.run_dir, args.dry_run,
+                      input_file=getattr(args, "input", None), metadata=getattr(args, "json", None),
+                      runner=getattr(args, "runner", None), timeout_ms=getattr(args, "timeout_ms", 5000),
+                      overwrite_payload=getattr(args, "overwrite_payload", False))
         return None
     if args.command == "compare":
-        result = steps.compare(args.example, args.run_dir, args.inputs, args.sim, args.hw, args.lsb_tolerance)
+        result = steps.compare(args.example, args.run_dir, args.inputs, args.sim, args.hw,
+                               args.lsb_tolerance, scope=args.scope)
         if not result["pass"]:
-            raise ValueError("Comparison tolerance violated")
+            raise ValueError(f"Comparison {result['status']}: failed={result['checks_failed']} "
+                             f"missing={[name for name in result['required'] if name not in result['checks_run']]}")
         return result
     if args.command == "report":
         from .reporting import report
         return report(args.run_dir)
     if args.command == "example":
+        from . import attempt
         from .reporting import report
         run_dir = Path(args.run_dir) if args.run_dir else ROOT / "reports" / (datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + args.name)
+        if run_dir.exists() and any(run_dir.iterdir()):
+            raise ValueError(f"run directory not empty: {run_dir}; choose a new directory (historical files are kept)")
         run_dir.mkdir(parents=True, exist_ok=True)
+        attempt_id = attempt.new(run_dir, args._argv)["attempt_id"]
         sequence = ("data", "train", "eval", "export", "inspect", "compile", "sim", "infer", "compare")
         from .reporting import append_log
-        for stage in sequence[:sequence.index(args.until)+1]:
-            print(f"{stage}: {args.name}", flush=True)
-            if stage == "data": result = steps.data(args.name, run_dir, args.full)
-            elif stage == "train": result = steps.train(args.name, run_dir, args.full)
-            elif stage == "eval": result = steps.evaluate(args.name, run_dir)
-            elif stage == "export": result = steps.export(args.name, run_dir, args.form)
-            elif stage == "inspect":
-                from .inspect import inspect_model
-                result = inspect_model(run_dir / "model.tflite", args.sdk_root)
-                steps.write_json(run_dir / "inspect.json", result)
-                blocking = [flag for flag in result["blocking_flags"] if not (args.allow_fc_chain and flag.startswith("fc_chain_fused_activation"))]
-                if result["unsupported"] or result["limit_violations"] or blocking: raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
-            elif stage == "compile":
-                from .remote_ops import compile_plan, run_plan
-                records = run_plan(compile_plan(run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost))
-                steps.write_json(run_dir / "compile.json", {"commands": records, "sha256": steps.sha256(run_dir / "model.vnnx"), "size_bytes": (run_dir / "model.vnnx").stat().st_size})
-                result = None
-            elif stage == "sim":
-                from .remote_ops import sim_plan, run_plan
-                _prepare_quantized_input(args.name, run_dir)
-                records = run_plan(sim_plan(run_dir / "model.vnnx", run_dir / "input.int8.npy", run_dir / "sim.npz", args.toolshost))
-                steps.write_json(run_dir / "sim.json", {"commands": records, "sha256": steps.sha256(run_dir / "sim.npz")})
-                result = None
-            elif stage == "infer":
-                from .remote_ops import infer_plan, run_plan
-                records = run_plan(infer_plan(run_dir / "model.vnnx", run_dir / "input.int8.npy", run_dir / "hw.bin", run_dir / "hw.json", ROOT / "hw" / "vbx_run", args.kit, 5000))
-                steps.write_json(run_dir / "infer.json", {"commands": records, "sha256": steps.sha256(run_dir / "hw.bin")})
-                result = None
-            else:
-                result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz", hw=run_dir / "hw.bin")
-                if not result["pass"]: raise ValueError("Comparison tolerance violated")
-            if result is not None: print(json.dumps(result, sort_keys=True)[:500])
-            append_log(run_dir, f"pfkit {stage} {args.name} --run-dir {run_dir}", 0)
+        stage = "not run"
+        try:
+            if sequence.index(args.until) >= sequence.index("infer"):
+                _require_runner(args.runner)
+            print(f"samples: {args.samples}" + (" (one-sample fast path)" if args.samples == 1 else ""),
+                  flush=True)
+            for stage in sequence[:sequence.index(args.until)+1]:
+                print(f"{stage}: {args.name}", flush=True)
+                if stage == "data": result = steps.data(args.name, run_dir, args.full)
+                elif stage == "train": result = steps.train(args.name, run_dir, args.full)
+                elif stage == "eval": result = steps.evaluate(args.name, run_dir)
+                elif stage == "export": result = steps.export(args.name, run_dir, args.form, sdk_root=args.sdk_root)
+                elif stage == "inspect":
+                    from .inspect import inspect_model
+                    result = inspect_model(run_dir / "model.tflite", args.sdk_root)
+                    steps.write_json(run_dir / "inspect.json", result)
+                    blocking = [flag for flag in result["blocking_flags"] if not (args.allow_fc_chain and flag.startswith("fc_chain_fused_activation"))]
+                    if result["unsupported"] or result["limit_violations"] or blocking:
+                        raise ValueError(f"Unsupported operators or options: {result['unsupported']}, {result['limit_violations']}, {blocking}")
+                elif stage == "compile":
+                    result = _remote_stage(stage, run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost, run_dir,
+                                           attempt_id=attempt_id)
+                elif stage == "sim":
+                    steps.prepare_input(args.name, run_dir, samples=args.samples,
+                                        selection=args.selection, seed=args.seed)
+                    result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "sim.npz", args.toolshost,
+                                           run_dir, input_file=run_dir / "input.int8.npy", attempt_id=attempt_id)
+                elif stage == "infer":
+                    result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "hw.bin", args.kit,
+                                           run_dir, input_file=run_dir / "input.int8.bin",
+                                           metadata=run_dir / "hw.json", runner=args.runner,
+                                           attempt_id=attempt_id)
+                else:
+                    result = steps.compare(args.name, run_dir, sim=run_dir / "sim.npz",
+                                           hw=run_dir / "hw.bin", scope="full")
+                    if not result["pass"]:
+                        raise ValueError(f"Comparison {result['status']}: failed={result['checks_failed']} "
+                                         f"missing={[name for name in result['required'] if name not in result['checks_run']]}")
+                if stage in ("data", "train", "eval", "export", "inspect"):
+                    _stamp_local_stage(run_dir, stage, attempt_id)
+                if result is not None:
+                    print(json.dumps(result, sort_keys=True)[:500])
+                append_log(run_dir, f"pfkit {stage} {args.name} --run-dir {run_dir}", 0)
+        except Exception as error:
+            failure = {"stage": stage, "error": str(error), "attempt_id": attempt_id,
+                       "records": getattr(error, "records", [])}
+            steps.write_json(run_dir / "failure.json", failure)
+            append_log(run_dir, f"pfkit {stage} {args.name} --run-dir {run_dir}", 1)
+            try:
+                report(run_dir)
+            except Exception as report_error:
+                failure["report_error"] = str(report_error)
+                steps.write_json(run_dir / "failure.json", failure)
+            raise
         print(report(run_dir))
         return None
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    args._argv = list(sys.argv[1:] if argv is None else argv)
     from .reporting import append_log
     try:
         result = _dispatch(args)
@@ -224,7 +443,7 @@ def main(argv=None):
     except Exception as error:
         print(f"pfkit: {error}", file=sys.stderr)
         code = 1
-    if getattr(args, "run_dir", None):
+    if getattr(args, "run_dir", None) and not getattr(args, "dry_run", False):
         append_log(args.run_dir, "pfkit " + " ".join(sys.argv[1:] if argv is None else argv), code)
         if code == 0 and args.command in ("example", "report"):
             from .reporting import report

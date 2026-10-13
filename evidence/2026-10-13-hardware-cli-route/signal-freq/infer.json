@@ -1,0 +1,109 @@
+{
+  "attempt_id": "20261013-143847-a51b3f2b",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "mkdir -p /tmp/pfkit/20261013-143847-a51b3f2b"
+      ],
+      "command": "ssh root@<kit> 'mkdir -p /tmp/pfkit/20261013-143847-a51b3f2b'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:07.166300+00:00",
+      "started_utc": "2026-10-13T14:39:06.387638+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<kit-root>/hw/vbx_run",
+        "reports/20261013-103847-signal-freq-cli64/model.vnnx",
+        "reports/20261013-103847-signal-freq-cli64/input.int8.bin",
+        "root@<kit>:/tmp/pfkit/20261013-143847-a51b3f2b/"
+      ],
+      "command": "scp <kit-root>/hw/vbx_run reports/20261013-103847-signal-freq-cli64/model.vnnx reports/20261013-103847-signal-freq-cli64/input.int8.bin root@<kit>:/tmp/pfkit/20261013-143847-a51b3f2b/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:08.045233+00:00",
+      "started_utc": "2026-10-13T14:39:07.167499+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "/tmp/pfkit/20261013-143847-a51b3f2b/vbx_run --model /tmp/pfkit/20261013-143847-a51b3f2b/model.vnnx --input /tmp/pfkit/20261013-143847-a51b3f2b/input.int8.bin --output /tmp/pfkit/20261013-143847-a51b3f2b/hw.bin --timeout-ms 5000 --json /tmp/pfkit/20261013-143847-a51b3f2b/hw.json"
+      ],
+      "command": "ssh root@<kit> '/tmp/pfkit/20261013-143847-a51b3f2b/vbx_run --model /tmp/pfkit/20261013-143847-a51b3f2b/model.vnnx --input /tmp/pfkit/20261013-143847-a51b3f2b/input.int8.bin --output /tmp/pfkit/20261013-143847-a51b3f2b/hw.bin --timeout-ms 5000 --json /tmp/pfkit/20261013-143847-a51b3f2b/hw.json'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:09.612188+00:00",
+      "started_utc": "2026-10-13T14:39:08.046321+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/20261013-143847-a51b3f2b/hw.bin",
+        "reports/20261013-103847-signal-freq-cli64/hw.bin"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/20261013-143847-a51b3f2b/hw.bin reports/20261013-103847-signal-freq-cli64/hw.bin",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:10.431395+00:00",
+      "started_utc": "2026-10-13T14:39:09.613098+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/20261013-143847-a51b3f2b/hw.json",
+        "reports/20261013-103847-signal-freq-cli64/hw.json"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/20261013-143847-a51b3f2b/hw.json reports/20261013-103847-signal-freq-cli64/hw.json",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:11.235373+00:00",
+      "started_utc": "2026-10-13T14:39:10.432199+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/kit.yaml",
+    "values": {
+      "remote_dir": "/tmp/pfkit",
+      "ssh_target": "root@<kit>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      }
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "a83f4801ec4ffd3ceb4fa26df066ffba334c1d77cb7968b064b4ab0a55ec8089",
+    "payload_sha256": "56b5c46c63d03e2cb4f69c19c4c5c4a786a662a3f006796de0b56ec83e3a549a",
+    "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-103847-signal-freq-cli64/hw.bin",
+    "sha256": "f3e1261b53f12fd8016237e18dd15164b6c6ea250c4367f635d96914492ad40d",
+    "size_bytes": 64
+  },
+  "payload_sha256": "56b5c46c63d03e2cb4f69c19c4c5c4a786a662a3f006796de0b56ec83e3a549a",
+  "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771",
+  "status": "completed"
+}

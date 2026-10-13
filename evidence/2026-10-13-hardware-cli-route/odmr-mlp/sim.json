@@ -1,0 +1,96 @@
+{
+  "attempt_id": "20261013-143913-dcbea726",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "mkdir -p pfkit-work/20261013-143913-dcbea726"
+      ],
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work/20261013-143913-dcbea726'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:23.022365+00:00",
+      "started_utc": "2026-10-13T14:39:22.789819+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "reports/20261013-103912-odmr-mlp-cli64/model.vnnx",
+        "reports/20261013-103912-odmr-mlp-cli64/input.int8.npy",
+        "<kit-root>/pfkit/remote/vbx_sim_run.py",
+        "<tools-host>:pfkit-work/20261013-143913-dcbea726/"
+      ],
+      "command": "scp reports/20261013-103912-odmr-mlp-cli64/model.vnnx reports/20261013-103912-odmr-mlp-cli64/input.int8.npy <kit-root>/pfkit/remote/vbx_sim_run.py <tools-host>:pfkit-work/20261013-143913-dcbea726/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:23.260670+00:00",
+      "started_utc": "2026-10-13T14:39:23.023298+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "wsl.exe -d Ubuntu -- bash -lc 'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-143913-dcbea726 && python <tools-host-home>/pfkit-work/20261013-143913-dcbea726/vbx_sim_run.py --model <tools-host-home>/pfkit-work/20261013-143913-dcbea726/model.vnnx --input <tools-host-home>/pfkit-work/20261013-143913-dcbea726/input.int8.npy --output <tools-host-home>/pfkit-work/20261013-143913-dcbea726/sim.npz'"
+      ],
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/20261013-143913-dcbea726 && python <tools-host-home>/pfkit-work/20261013-143913-dcbea726/vbx_sim_run.py --model <tools-host-home>/pfkit-work/20261013-143913-dcbea726/model.vnnx --input <tools-host-home>/pfkit-work/20261013-143913-dcbea726/input.int8.npy --output <tools-host-home>/pfkit-work/20261013-143913-dcbea726/sim.npz'\"'\"''",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:30.113845+00:00",
+      "started_utc": "2026-10-13T14:39:23.261484+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<tools-host>:pfkit-work/20261013-143913-dcbea726/sim.npz",
+        "reports/20261013-103912-odmr-mlp-cli64/sim.npz"
+      ],
+      "command": "scp <tools-host>:pfkit-work/20261013-143913-dcbea726/sim.npz reports/20261013-103912-odmr-mlp-cli64/sim.npz",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T14:39:30.347440+00:00",
+      "started_utc": "2026-10-13T14:39:30.114878+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/toolshost.yaml",
+    "values": {
+      "command_prefix": "wsl.exe -d Ubuntu --",
+      "remote_work_dir": "<tools-host-home>/pfkit-work",
+      "size_config": "V250",
+      "ssh_target": "<tools-host>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      },
+      "transfer_dir": "pfkit-work",
+      "venv_activate": "~/vbx-env/bin/activate"
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "11c6a1df28828d50c336480d79f593bbe8d6b80fde0a9c5aaf85ba0a0a80db05",
+    "payload_sha256": "85f113c7d5d3145634538586f2bf9a1db06eeff7d55b34ced457b4ba82f1b23a"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-103912-odmr-mlp-cli64/sim.npz",
+    "sha256": "5bb14720724a0cd45711d3b54546b07810ac1063bafd002b7995ba4109436883",
+    "size_bytes": 1099
+  },
+  "payload_sha256": "85f113c7d5d3145634538586f2bf9a1db06eeff7d55b34ced457b4ba82f1b23a",
+  "status": "completed"
+}

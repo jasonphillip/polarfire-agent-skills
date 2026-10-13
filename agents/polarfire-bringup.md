@@ -51,6 +51,12 @@ RUN_DIR="$KIT_ROOT/reports/signal-inspect"
 
 Choose `--until data`, `train`, `eval`, `export`, or `inspect` for local work.
 Choose `--until compile`, `sim`, `infer`, or `compare` for remote work.
+For a 64-sample run, add `--samples 64`; the default is a labeled one-sample
+fast path. The CLI prepares one input selection before simulation, then uses
+it for inference and comparison. This route passed on the kit for both examples
+with 64 complete samples and exact simulator versus hardware output
+(`evidence/2026-10-13-hardware-cli-route/README.md`). Use a fresh run directory
+and read its `attempt.json`.
 A second `example run` starts again at data.
 Use a new run directory when changing the final stage or `--full` mode.
 Use individual pfkit commands only when their input files are already prepared.
@@ -71,10 +77,11 @@ Stop at a failed gate and keep its output.
 | eval | `RUN_DIR/eval.json` | Test error and units recorded. |
 | export | `RUN_DIR/export.manifest.json` | INT8 model and calibration recorded. |
 | inspect | `RUN_DIR/inspect.json` | Unsupported and limit lists empty. |
+| prepare-input | `RUN_DIR/input.manifest.json` | Sample indices, layout and payload hash recorded before sim. |
 | compile | `RUN_DIR/compile.json` | Remote command passed and VNNX recorded. |
 | sim | `RUN_DIR/sim.json` | Simulator output recorded. |
 | infer | `RUN_DIR/infer.json` and `RUN_DIR/hw.json` | Kit output and runner metadata recorded. |
-| compare | `RUN_DIR/compare.json` | All supplied comparisons pass stated bounds. |
+| compare | `RUN_DIR/compare.json` | `status` is `passed`. For a full deployment check, `complete` is also true. `incomplete`, `no_evidence`, `failed` and `stale` are not passes. `exact` false means within tolerance, not equal. |
 
 Use `claim-log` to summarize the run.
 Never write a number not read from tool output.

@@ -38,6 +38,8 @@ def inspect_model(path, sdk_root=None):
         sg = model.Subgraphs(sg_index)
         sg_operators = []
         tensor_base = len(tensors)
+        io_indices = ({int(sg.Inputs(j)) for j in range(sg.InputsLength())}
+                      | {int(sg.Outputs(j)) for j in range(sg.OutputsLength())})
         for i in range(sg.TensorsLength()):
             t = sg.Tensors(i)
             q = t.Quantization()
@@ -51,9 +53,19 @@ def inspect_model(path, sdk_root=None):
                                      "quantized_dimension": int(q.QuantizedDimension()) if q else 0},
                     "buffer": int(t.Buffer())}
             if any(v < 0 for v in signature) or any(v <= 0 for v in shape):
-                flags.append(f"dynamic shape tensor {i}")
+                flag = f"dynamic shape tensor {i}"
+                flags.append(flag)
+                if i in io_indices:
+                    blocking_flags.append(flag)
             if item["dtype"].startswith("FLOAT"):
-                flags.append(f"float tensor {i} ({item['name']})")
+                flag = f"float tensor {i} ({item['name']})"
+                flags.append(flag)
+                if i in io_indices:
+                    blocking_flags.append(flag)
+            elif i in io_indices and item["dtype"] != "INT8":
+                flag = f"unsupported IO dtype {item['dtype']} tensor {i}"
+                flags.append(flag)
+                blocking_flags.append(flag)
             if len(item["quantization"]["scales"]) > 1:
                 flags.append(f"per-channel quantization tensor {i}")
             tensors.append(item)

@@ -22,8 +22,28 @@ Each stage writes evidence in its run directory.
 
 Validated: clean Linux and macOS inspect runs, client workflows, simulator
 checks, and 64-sample kit runs. See `docs/validation.md`.
-Limits: the Libero build is in progress, and the kit-built image has not been
-programmed. See `docs/validation.md` and `docs/release-notes.md`.
+The kit's Libero build completed on 2026-10-12: timing met and the job was
+exported (`evidence/2026-10-12-libero-build/`). That image has not been
+programmed or tested on a kit. Hardware evidence uses the earlier case-study
+image. The `--samples 64` CLI route passed on the kit for both examples:
+64 samples completed, simulator and hardware outputs matched exactly at 0 LSB,
+and each `hw.bin` matched the 2026-10-12 batch byte for byte
+(`evidence/2026-10-13-hardware-cli-route/README.md`). Input payloads also
+matched the earlier batch on the host
+(`evidence/2026-10-13-release-readiness/payload-regeneration.md`).
+See `docs/validation.md` and `docs/release-notes.md`.
+
+This is a PolarFire-specific integration of the VectorBlox flow with evidence
+handling. Prior art includes FINN's end-to-end flow and verification methods,
+and the hls4ml Libero backend. The hls4ml PR below was an open draft as of
+2026-10-13; nothing from it was accepted upstream at that review. Its current
+state was not checked in this offline documentation pass.
+
+```text
+https://finn-dev.readthedocs.io/en/latest/end_to_end_flow.html
+https://finn.readthedocs.io/en/latest/verification.html
+https://github.com/fastmachinelearning/hls4ml/pull/1578
+```
 
 Read `docs/scope.md` for the supported profile.
 Read `docs/pipeline.md` for commands and outputs.

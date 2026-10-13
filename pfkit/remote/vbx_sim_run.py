@@ -16,6 +16,8 @@ def main():
     if model.num_inputs != 1 or model.num_outputs != 1:
         raise ValueError("This runner accepts one input and one output")
     samples = np.load(args.input)
+    if samples.size < 1:
+        raise ValueError("Input must contain K >= 1 int8 samples")
     shape = tuple(model.input_shape[0])
     if samples.shape == shape:
         samples = [samples]
@@ -25,18 +27,12 @@ def main():
         samples = [samples]
     elif samples.ndim == 2 and samples.shape[1] == np.prod(shape):
         samples = list(samples)
-    elif len(shape) == 4 and samples.ndim == 3 and samples.transpose(2, 0, 1).shape == shape[1:]:
-        samples = [samples]
-    elif len(shape) == 4 and samples.ndim == 4 and samples.transpose(0, 3, 1, 2).shape[1:] == shape[1:]:
-        samples = list(samples)
     else:
-        raise ValueError("Input shape does not match model input shape")
+        raise ValueError("Input must be in model layout (K, C, H, W) or flat (K, N)")
     outputs = []
     for sample in samples:
         if sample.dtype != model.input_dtypes[0]:
             raise ValueError("Input dtype does not match model input dtype")
-        if sample.ndim == 3 and len(shape) == 4:
-            sample = sample.transpose(2, 0, 1)
         outputs.append(np.asarray(model.run([np.ascontiguousarray(sample).ravel()])[0]).ravel())
     np.savez_compressed(args.output, outputs=np.asarray(outputs),
         input_scale=np.asarray(model.input_scale_factor), input_zero_point=np.asarray(model.input_zeropoint),

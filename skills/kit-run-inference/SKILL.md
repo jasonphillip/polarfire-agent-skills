@@ -27,14 +27,19 @@ The third command needs the configured kit and built runner.
 ```sh
 KIT_ROOT=/absolute/path/to/polarfire-agent-skills
 "$KIT_ROOT/.venv/bin/python" -m pfkit compile "$KIT_ROOT/reports/signal-local/model.tflite" --output "$KIT_ROOT/reports/signal-local/model.vnnx" --run-dir "$KIT_ROOT/reports/signal-local"
+"$KIT_ROOT/.venv/bin/python" -m pfkit prepare-input signal-freq --run-dir "$KIT_ROOT/reports/signal-local" --samples 64
 "$KIT_ROOT/.venv/bin/python" -m pfkit sim "$KIT_ROOT/reports/signal-local/model.vnnx" --input "$KIT_ROOT/reports/signal-local/input.int8.npy" --output "$KIT_ROOT/reports/signal-local/sim.npz" --run-dir "$KIT_ROOT/reports/signal-local"
 "$KIT_ROOT/.venv/bin/python" -m pfkit infer "$KIT_ROOT/reports/signal-local/model.vnnx" --input "$KIT_ROOT/reports/signal-local/input.int8.bin" --output "$KIT_ROOT/reports/signal-local/hw.bin" --json "$KIT_ROOT/reports/signal-local/hw.json" --run-dir "$KIT_ROOT/reports/signal-local"
 ```
 
 The `example run` path prepares both quantized input files before sim.
-For manual stages, prepare `input.int8.npy` and `input.int8.bin` from the inspected TFLite input scale and zero point.
+For manual stages, `prepare-input` uses the inspected TFLite input scale and zero point.
+It writes both files and a manifest with sample indices and the payload hash.
+`example run signal-freq --until compare --samples 64` carries one held-out selection through all stages.
+Its default is one sample, labeled as the one-sample fast path.
+Use `--selection random --seed N` for a repeatable random selection.
 Keep the fixed batch and input layout from the example contract.
-The binary file must contain the model's exact input byte count.
+The binary file must contain K * input_bytes bytes, where K >= 1 matches the selected sample count.
 Use `--dry-run` to review each remote command before execution.
 A dry run is a plan, not a successful remote stage.
 
@@ -47,6 +52,12 @@ Hardware equality is exact by default.
 Use `--lsb-tolerance` only when the run states the changed bound.
 A missing simulator or hardware file leaves that comparison `not run`.
 Stop when a comparison reports a failed bound.
+Read `compare.json` `status`, `complete`, each row's `status` and `exact`,
+and `attempt_id`. `stale` and `failed` are non-passes. A `passed` result
+without `complete: true` is not full deployment validation.
+The 64-sample CLI route passed on the case-study kit image for both examples:
+all 64 samples completed and matched the simulator exactly at 0 LSB
+(`evidence/2026-10-13-hardware-cli-route/README.md`).
 
 ## Evidence
 

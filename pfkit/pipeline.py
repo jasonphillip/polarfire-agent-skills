@@ -131,7 +131,7 @@ def evaluate(name, run_dir):
     return report
 
 
-def export(name, run_dir, form="conv1x1"):
+def export(name, run_dir, form="conv1x1", sdk_root=None):
     import tensorflow as tf
     from .adapters import to_keras, verify_transliteration
     from .inspect import inspect_model
@@ -175,7 +175,7 @@ def export(name, run_dir, form="conv1x1"):
             raise RuntimeError(f"INT8 conversion failed: {first}; fallback experimental_new_quantizer=False: {second}") from second
     path = Path(run_dir) / "model.tflite"
     path.write_bytes(blob)
-    result = inspect_model(path)
+    result = inspect_model(path, sdk_root=sdk_root)
     qats = {}
     for module_name, module in model.named_modules():
         if "fake_quant" in type(module).__name__.lower() or "observer" in type(module).__name__.lower():
@@ -195,27 +195,51 @@ def export(name, run_dir, form="conv1x1"):
     return manifest
 
 
+CHECKS = ("float_vs_tflite", "tflite_vs_sim", "sim_vs_hw")
+
+
+def _validate_pair(left, right, label, integer):
+    left, right = np.asarray(left), np.asarray(right)
+    if left.size == 0 or right.size == 0:
+        raise ValueError(f"{label}: empty array")
+    if left.shape != right.shape:
+        raise ValueError(f"{label} shape mismatch: {left.shape} != {right.shape}")
+    for name, value in (("left", left), ("right", right)):
+        if integer:
+            if value.dtype != np.int8:
+                raise ValueError(f"{label} {name}: expected int8 raw outputs, got {value.dtype}")
+        elif not np.issubdtype(value.dtype, np.floating) or not np.all(np.isfinite(value)):
+            raise ValueError(f"{label} {name}: expected finite float values")
+    return left, right
+
+
 def compare_arrays(float_values, tflite_values, tflite_raw=None, sim_values=None, hw_values=None,
-                   float_tolerance=1.0, sim_tolerance=1, hw_tolerance=0):
-    report = {"float_vs_tflite": "not run", "tflite_vs_sim": "not run", "sim_vs_hw": "not run", "pass": True}
-    for left, right, label in ((float_values, tflite_values, "float/TFLite"), (tflite_raw, sim_values, "TFLite/simulator"), (sim_values, hw_values, "simulator/hardware")):
-        if left is not None and right is not None and np.shape(left) != np.shape(right):
-            raise ValueError(f"{label} shape mismatch: {np.shape(left)} != {np.shape(right)}")
-    if float_values is not None and tflite_values is not None:
-        delta = float(np.max(np.abs(np.asarray(float_values) - np.asarray(tflite_values))))
-        ok = delta <= float_tolerance
-        report["float_vs_tflite"] = {"max_abs": delta, "tolerance": float_tolerance, "pass": ok}
-        report["pass"] &= ok
-    if sim_values is not None and tflite_raw is not None:
-        delta = int(np.max(np.abs(np.asarray(tflite_raw, dtype=np.int16) - np.asarray(sim_values, dtype=np.int16))))
-        ok = delta <= sim_tolerance
-        report["tflite_vs_sim"] = {"max_abs_lsb": delta, "tolerance_lsb": sim_tolerance, "pass": ok}
-        report["pass"] &= ok
-    if hw_values is not None and sim_values is not None:
-        delta = int(np.max(np.abs(np.asarray(sim_values, dtype=np.int16) - np.asarray(hw_values, dtype=np.int16))))
-        ok = delta <= hw_tolerance
-        report["sim_vs_hw"] = {"max_abs_lsb": delta, "tolerance_lsb": hw_tolerance, "pass": ok}
-        report["pass"] &= ok
+                   float_tolerance=1.0, sim_tolerance=1, hw_tolerance=0,
+                   required=("float_vs_tflite",)):
+    pairs = {
+        "float_vs_tflite": (float_values, tflite_values, False, float_tolerance, "max_abs", "tolerance"),
+        "tflite_vs_sim": (tflite_raw, sim_values, True, sim_tolerance, "max_abs_lsb", "tolerance_lsb"),
+        "sim_vs_hw": (sim_values, hw_values, True, hw_tolerance, "max_abs_lsb", "tolerance_lsb"),
+    }
+    report = {name: {"status": "not run"} for name in CHECKS}
+    for name, (left, right, integer, tolerance, key, tol_key) in pairs.items():
+        if left is None or right is None:
+            continue
+        left, right = _validate_pair(left, right, name, integer)
+        delta = (np.max(np.abs(left.astype(np.int16) - right.astype(np.int16))) if integer
+                 else np.max(np.abs(left - right)))
+        delta = int(delta) if integer else float(delta)
+        ok = delta <= tolerance
+        report[name] = {"status": "passed" if ok else "failed", key: delta, tol_key: tolerance,
+                        "exact": delta == 0, "pass": ok}
+    run = [name for name in CHECKS if report[name]["status"] != "not run"]
+    failed = [name for name in run if report[name]["status"] == "failed"]
+    missing = [name for name in required if name not in run]
+    status = "no_evidence" if not run else "failed" if failed else "incomplete" if missing else "passed"
+    report.update({"checks_run": run, "checks_passed": [name for name in run if name not in failed],
+                   "checks_failed": failed, "checks_not_run": [name for name in CHECKS if name not in run],
+                   "required": list(required), "complete": len(run) == len(CHECKS),
+                   "status": status, "pass": status == "passed"})
     return report
 
 
@@ -227,14 +251,147 @@ def load_hardware_outputs(path, shape):
     return raw.reshape(shape)
 
 
-def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
+def prepare_input(name, run_dir, samples=1, split="test", selection="first", seed=None):
+    from .payload import quantize, to_model_layout, write_payload
+    if samples < 1:
+        raise ValueError("payload must contain K >= 1 int8 samples")
+    if selection not in ("first", "random"):
+        raise ValueError(f"Unknown sample selection: {selection}")
+    import tensorflow as tf
+    cfg, _ = example_module(name)
+    run_dir = Path(run_dir)
+    values = load_data(run_dir)[f"{split}_x"]
+    if samples > len(values):
+        raise ValueError(f"requested {samples} samples from {split}, only {len(values)} available")
+    indices = (np.arange(samples) if selection == "first" else
+               np.random.default_rng(seed).choice(len(values), samples, replace=False))
+    interpreter = tf.lite.Interpreter(model_path=str(run_dir / "model.tflite"), num_threads=1)
+    interpreter.allocate_tensors()
+    scale, zero = interpreter.get_input_details()[0]["quantization"]
+    array = to_model_layout(quantize(values[indices], scale, zero), cfg["adapter"])
+    return write_payload(run_dir, array,
+                         {"split": split, "method": selection,
+                          "indices": [int(index) for index in indices], "seed": seed},
+                         {"scale": float(scale), "zero_point": int(zero)})
+
+
+def check_prerequisites(run_dir, sim=None, hw=None):
+    """Reject recorded outputs that do not describe the current run inputs."""
+    from .attempt import current
+
+    directory = Path(run_dir)
+    active = current(directory)
+    active_id = active.get("attempt_id") if active else None
+    manifest_path = directory / "input.manifest.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
+    for artifact, name in ((sim, "sim"), (hw, "infer")):
+        if artifact is None:
+            continue
+        record_path = directory / f"{name}.json"
+        if not record_path.is_file():
+            raise ValueError(f"stale: {name}.json is missing for attempt {active_id or 'unknown'}")
+        record = json.loads(record_path.read_text())
+        if record.get("status") == "failed":
+            continue
+        if record.get("status") != "completed":
+            raise ValueError(f"stale: {name}.json stage was not completed")
+        recorded_id = record.get("attempt_id")
+        if active_id and recorded_id != active_id:
+            raise ValueError(f"stale: {name}.json belongs to attempt {recorded_id or 'unknown'}")
+        inputs = record.get("inputs", {})
+        model_hash = inputs.get("model_sha256")
+        model_path = directory / "model.vnnx"
+        if not model_hash:
+            raise ValueError(f"stale: {name}.json has no model hash")
+        actual = sha256(model_path) if model_path.is_file() else "missing"
+        if model_hash != actual:
+            raise ValueError(f"stale: {name}.json was recorded for model {model_hash[:8]}, current model is {actual[:8]}")
+        if manifest is not None:
+            recorded_payload = inputs.get("payload_sha256")
+            if recorded_payload != manifest.get("payload_sha256"):
+                raise ValueError(f"stale: {name}.json payload does not match input.manifest.json")
+        output = record.get("output")
+        if not output or not output.get("sha256"):
+            raise ValueError(f"stale: {name}.json has no output hash")
+        actual_output = sha256(artifact) if Path(artifact).is_file() else "missing"
+        if output["sha256"] != actual_output:
+            raise ValueError(f"stale: {name}.json output hash does not match {Path(artifact).name}")
+
+
+def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scope="requested"):
+    from .attempt import manual
+
+    attempt_id = manual(run_dir)["attempt_id"]
+    path = Path(run_dir) / "compare.json"
+    write_json(path, {"status": "error", "pass": False, "reason": "comparison in progress",
+                      "attempt_id": attempt_id})
+    try:
+        return _compare_impl(name, run_dir, inputs, sim, hw, lsb_tolerance, scope)
+    except Exception as error:
+        write_json(path, {"status": "stale" if str(error).startswith("stale:") else "error",
+                          "pass": False, "reason": str(error), "attempt_id": attempt_id})
+        raise
+
+
+def _compare_impl(name, run_dir, inputs, sim, hw, lsb_tolerance, scope):
+    if scope not in ("requested", "full"):
+        raise ValueError(f"Unknown comparison scope: {scope}")
+    from .attempt import manual
+    active_id = manual(run_dir)["attempt_id"]
+    try:
+        check_prerequisites(run_dir, sim=sim, hw=hw)
+    except ValueError as error:
+        if not str(error).startswith("stale:"):
+            raise
+        write_json(Path(run_dir) / "compare.json", {"status": "stale", "pass": False,
+                                                  "attempt_id": active_id, "inputs": {},
+                                                  "reason": str(error)})
+        raise
+    sim_record = Path(run_dir) / "sim.json"
+    if sim is not None and sim_record.is_file() and json.loads(sim_record.read_text()).get("status") == "failed":
+        report = compare_arrays(None, None, required=CHECKS if scope == "full" else ("tflite_vs_sim",))
+        report.update(status="incomplete", reason="simulation stage failed",
+                      attempt_id=active_id, inputs={})
+        write_json(Path(run_dir) / "compare.json", report)
+        return report
+    infer_record = Path(run_dir) / "infer.json"
+    if hw is not None and infer_record.is_file():
+        infer_status = json.loads(infer_record.read_text()).get("status")
+        if infer_status == "failed":
+            report = compare_arrays(None, None, required=CHECKS if scope == "full" else ("sim_vs_hw",))
+            report.update(status="incomplete", reason="inference stage failed",
+                          attempt_id=active_id, inputs={})
+            write_json(Path(run_dir) / "compare.json", report)
+            return report
     import tensorflow as tf
     import torch
+    from .payload import payload_sha256, quantize, to_model_layout
     cfg, _ = example_module(name)
     parts = load_data(run_dir)
     sim_raw = np.load(sim)["outputs"] if sim else None
     sample_count = len(sim_raw) if sim_raw is not None else 1
-    x = np.load(inputs) if inputs else parts["test_x"][:sample_count]
+    payload_manifest = Path(run_dir) / "input.manifest.json"
+    manifest = None
+    if payload_manifest.is_file():
+        manifest = json.loads(payload_manifest.read_text())
+        payload = np.load(Path(run_dir) / "input.int8.npy", allow_pickle=False)
+        if (payload_sha256(payload) != manifest["payload_sha256"] or
+                list(payload.shape) != manifest["shape"] or
+                payload.dtype != np.int8):
+            raise ValueError("payload hash mismatch")
+        if (Path(run_dir) / "input.int8.bin").read_bytes() != np.ascontiguousarray(payload).tobytes():
+            raise ValueError("payload hash mismatch")
+    if inputs is None and manifest is not None:
+        selected = manifest["selection"]
+        indices = selected["indices"]
+        if len(indices) != len(payload) or len(indices) < 1:
+            raise ValueError("payload selection/sample count mismatch")
+        x = parts[f"{selected['split']}_x"][indices]
+        sample_count = len(payload) if sim_raw is None else sample_count
+    else:
+        x = np.load(inputs) if inputs else parts["test_x"][:sample_count]
+        if sim_raw is None:
+            sample_count = len(x)
     if len(x) != sample_count and sim_raw is not None:
         raise ValueError(f"input/simulator sample count mismatch: {len(x)} != {sample_count}")
     if len(x.shape) == len(cfg["input"]["shape"]) - 1:
@@ -246,20 +403,46 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0):
     interpreter.allocate_tensors()
     i, o = interpreter.get_input_details()[0], interpreter.get_output_details()[0]
     tflite_raw, tflite_float = [], []
-    for sample in x:
+    scale, zero = i["quantization"]
+    selected_quantized = to_model_layout(quantize(x, scale, zero), cfg["adapter"])
+    comparison_payload_hash = payload_sha256(selected_quantized)
+    if manifest is not None and (comparison_payload_hash != manifest["payload_sha256"] or
+                                 manifest["quantization"] != {"scale": float(scale), "zero_point": int(zero)}):
+        raise ValueError("payload hash mismatch")
+    for artifact, stage in ((sim, "sim"), (hw, "infer")):
+        if artifact is not None:
+            record = json.loads((Path(run_dir) / f"{stage}.json").read_text())
+            if record.get("status") == "completed" and record.get("inputs", {}).get("payload_sha256") != comparison_payload_hash:
+                raise ValueError(f"payload hash mismatch: {stage}.json differs from comparison input")
+    for sample in selected_quantized:
         value = sample[None]
         if cfg["adapter"] == "conv2d_1k":
             value = value.transpose(0, 2, 3, 1)
         elif cfg["adapter"] == "mlp" and len(i["shape"]) == 4:
             value = value.reshape(i["shape"])
-        scale, zero = i["quantization"]
-        quantized = np.clip(np.rint(value / scale + zero), -128, 127).astype(np.int8)
-        interpreter.set_tensor(i["index"], quantized); interpreter.invoke()
+        interpreter.set_tensor(i["index"], value); interpreter.invoke()
         raw = interpreter.get_tensor(o["index"])
         tflite_raw.append(raw[0]); tflite_float.append((raw[0].astype(np.float32) - o["quantization"][1]) * o["quantization"][0] * cfg["output"]["target_scale"])
     raw = np.asarray(tflite_raw)
     hw_raw = load_hardware_outputs(hw, raw.shape) if hw else None
+    required = (CHECKS if scope == "full" else
+                tuple(name for name, present in (("float_vs_tflite", True),
+                                                  ("tflite_vs_sim", sim is not None),
+                                                  ("sim_vs_hw", hw is not None)) if present))
     report = compare_arrays(floated, np.asarray(tflite_float), raw, sim_raw, hw_raw,
-                            cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"], lsb_tolerance)
+                            cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"],
+                            lsb_tolerance, required=required)
+    report.update(samples=len(selected_quantized),
+                  split=manifest["selection"]["split"] if manifest else ("test" if inputs is None else "external"),
+                  selection=manifest["selection"] if manifest else
+                  {"method": "first" if inputs is None else "provided",
+                   "indices": list(range(len(selected_quantized))) if inputs is None else None},
+                  payload_sha256=manifest["payload_sha256"] if manifest else payload_sha256(selected_quantized),
+                  units=cfg["output"].get("units"),
+                  tolerances={**cfg["tolerances"], "sim_hw_lsb": lsb_tolerance})
+    report.update(attempt_id=active_id,
+                  inputs={"model_sha256": sha256(Path(run_dir) / "model.vnnx")
+                          if (Path(run_dir) / "model.vnnx").is_file() else None,
+                          "payload_sha256": manifest["payload_sha256"] if manifest else None})
     write_json(Path(run_dir) / "compare.json", report)
     return report

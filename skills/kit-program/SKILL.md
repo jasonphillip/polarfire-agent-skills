@@ -12,6 +12,9 @@ metadata:
 Read `docs/hardware.md` before changing the kit.
 The model inference path needs a V250-enabled image.
 The current kit build script creates a job but does not program the device.
+The 2026-10-12 kit build met timing and exported a job, but that image has
+not been programmed or tested on the kit. Earlier hardware evidence uses
+the case-study image (`evidence/2026-10-12-libero-build/`).
 Programming changes persistent hardware state.
 Get operator approval for the exact image and target before programming.
 

@@ -1,2 +1,3 @@
 ssh_target: kit
 remote_dir: /tmp/pfkit
+# timeouts: {compile: null, sim: 1800, infer: 300}   # seconds; null = no limit

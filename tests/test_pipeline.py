@@ -8,6 +8,73 @@ for key in ("OMP_NUM_THREADS", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS
     os.environ.setdefault(key, "1")
 
 
+def test_check_pack_accepts_dated_install_status():
+    text = (Path(__file__).resolve().parents[1] / "tools/check_pack.py").read_text()
+    assert '"not yet tested"' not in text
+    assert "Marketplace install: (tested" in text
+
+
+@pytest.mark.ml
+def test_export_forwards_sdk_root(tmp_path, monkeypatch):
+    import types
+    import tensorflow as tf
+    from pfkit import pipeline
+
+    captured = {}
+    monkeypatch.setattr("pfkit.inspect.inspect_model", lambda path, sdk_root=None: (
+        captured.update(sdk_root=sdk_root) or {"tensors": []}))
+    samples = np.zeros((2, 64), dtype=np.float32)
+    monkeypatch.setattr(pipeline, "load_data", lambda directory: {"test_x": samples, "train_x": samples})
+    monkeypatch.setattr(pipeline, "load_model", lambda name, directory: types.SimpleNamespace(named_modules=lambda: []))
+    monkeypatch.setattr("pfkit.adapters.to_keras", lambda *args, **kwargs: object())
+    monkeypatch.setattr("pfkit.adapters.verify_transliteration", lambda *args, **kwargs: None)
+
+    class Converter:
+        target_spec = types.SimpleNamespace(supported_ops=None)
+        def convert(self):
+            return b"model"
+
+    monkeypatch.setattr(tf.lite.TFLiteConverter, "from_keras_model", lambda model: Converter())
+    pipeline.export("signal-freq", tmp_path, sdk_root="/some/sdk")
+    assert captured["sdk_root"] == "/some/sdk"
+
+
+@pytest.mark.ml
+def test_inspect_blocks_dynamic_io(tmp_path):
+    import tensorflow as tf
+    from pfkit.inspect import inspect_model
+
+    @tf.function(input_signature=[tf.TensorSpec([None, 64], tf.float32)])
+    def model(x):
+        return x * 2.0
+
+    converter = tf.lite.TFLiteConverter.from_concrete_functions([model.get_concrete_function()], model)
+    path = tmp_path / "dynamic.tflite"
+    path.write_bytes(converter.convert())
+    result = inspect_model(path)
+    assert any("dynamic shape" in flag for flag in result["blocking_flags"])
+    assert any("float tensor" in flag for flag in result["blocking_flags"])
+
+
+def test_sdk_root_cli_routes(tmp_path, monkeypatch):
+    from pfkit import cli, pipeline
+
+    captured = []
+    monkeypatch.setattr(pipeline, "export", lambda *args, **kwargs: captured.append((args, kwargs)) or {})
+    monkeypatch.setattr(cli, "_stamp_local_stage", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pfkit.reporting.report", lambda path: Path(path) / "summary.md")
+    assert cli.main(["export", "signal-freq", "--run-dir", str(tmp_path), "--sdk-root", "/some/sdk"]) == 0
+    assert captured[-1][1]["sdk_root"] == "/some/sdk"
+    run_dir = tmp_path / "run"
+    monkeypatch.setattr(pipeline, "data", lambda *args, **kwargs: None)
+    monkeypatch.setattr(pipeline, "train", lambda *args, **kwargs: None)
+    monkeypatch.setattr(pipeline, "evaluate", lambda *args, **kwargs: None)
+    assert cli.main(["example", "run", "signal-freq", "--until", "export",
+                     "--run-dir", str(run_dir), "--sdk-root", "/some/sdk"]) == 0
+    assert captured[-1][1]["sdk_root"] == "/some/sdk"
+
+
+@pytest.mark.ml
 def test_adapters_accept_and_reject():
     import torch
     from torch import nn
@@ -35,9 +102,11 @@ def test_compare_math():
     same = np.array([[10, -2]], dtype=np.int8)
     close = np.array([[11, -2]], dtype=np.int8)
     report = compare_arrays(a, b, raw, same, same, 0.3, 1, 0)
-    assert report["pass"] and report["sim_vs_hw"]["max_abs_lsb"] == 0
+    assert report["pass"] and report["complete"]
+    assert report["sim_vs_hw"]["status"] == "passed"
+    assert report["sim_vs_hw"]["max_abs_lsb"] == 0
     assert not compare_arrays(a, b, raw, same, close, 0.3, 1, 0)["pass"]
-    assert compare_arrays(a, b)["tflite_vs_sim"] == "not run"
+    assert compare_arrays(a, b)["tflite_vs_sim"] == {"status": "not run"}
 
 
 def test_multi_sample_hardware_compare(tmp_path):
@@ -46,25 +115,31 @@ def test_multi_sample_hardware_compare(tmp_path):
     path = tmp_path / "hw.bin"
     sim.tofile(path)
     hardware = load_hardware_outputs(path, sim.shape)
-    report = compare_arrays(None, None, sim_values=sim, hw_values=hardware)
-    assert report["sim_vs_hw"] == {"max_abs_lsb": 0, "tolerance_lsb": 0, "pass": True}
+    report = compare_arrays(None, None, sim_values=sim, hw_values=hardware,
+                            required=("sim_vs_hw",))
+    assert report["sim_vs_hw"] == {"status": "passed", "max_abs_lsb": 0,
+                                    "tolerance_lsb": 0, "exact": True, "pass": True}
     assert report["pass"]
+    assert report["complete"] is False
     path.write_bytes(path.read_bytes()[:-1])
     with pytest.raises(ValueError, match="hardware output size mismatch"):
         load_hardware_outputs(path, sim.shape)
 
 
-def test_infer_plan_converts_multi_sample_npy(tmp_path):
+def test_infer_plan_takes_bin_only(tmp_path):
     from pfkit.remote_ops import infer_plan
     path = tmp_path / "input.int8.npy"
     values = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int8)
     np.save(path, values)
     root = Path(__file__).resolve().parents[1]
-    commands = infer_plan("model.vnnx", path, "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
-    assert path.with_suffix(".bin").read_bytes() == values.tobytes()
+    with pytest.raises(ValueError, match=r"infer_plan takes the \.bin payload"):
+        infer_plan("model.vnnx", path, "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
+    assert not path.with_suffix(".bin").exists()
+    commands = infer_plan("model.vnnx", path.with_suffix(".bin"), "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
     assert str(path.with_suffix(".bin")) in commands[1]
 
 
+@pytest.mark.ml
 def test_odmr_import_explains_missing_tk(monkeypatch):
     import builtins
     import importlib.util
@@ -102,6 +177,7 @@ def test_remote_dry_runs(tmp_path, capsys):
     assert "--timeout-ms 1000 --json" in output
 
 
+@pytest.mark.ml
 def test_inspect_flags_shape_and_float(tmp_path):
     import tensorflow as tf
     from pfkit.inspect import inspect_model
@@ -118,6 +194,7 @@ def test_inspect_flags_shape_and_float(tmp_path):
     assert "SHAPE" in result["unsupported"]
 
 
+@pytest.mark.ml
 def test_mlp_export_forms_and_fc_chain_flag(tmp_path):
     import subprocess
     import sys
@@ -197,7 +274,7 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
     model_path.write_bytes(b"model")
     for shape, values, expected in (
         ((1, 4, 1, 1), [[1, 2, 3, 4]], [[1, 2, 3, 4]]),
-        ((1, 2, 1, 2), [[[[1, 2], [3, 4]]]], [[1, 3, 2, 4]]),
+        ((1, 2, 1, 2), [[[[1, 2]], [[3, 4]]]], [[1, 2, 3, 4]]),
     ):
         model_shape[0] = shape
         input_path = tmp_path / "input.npy"
@@ -208,8 +285,13 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
         runner.main()
         with np.load(output_path) as result:
             assert result["outputs"].tolist() == expected
+    model_shape[0] = (1, 2, 1, 2)
+    np.save(input_path, np.array([[[[1], [2]], [[3], [4]]]], dtype=np.int8))
+    with pytest.raises(ValueError, match="model layout"):
+        runner.main()
 
 
+@pytest.mark.ml
 @pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp"])
 def test_examples_through_inspect(name, tmp_path):
     import tensorflow as tf
@@ -241,14 +323,14 @@ def test_examples_through_inspect(name, tmp_path):
     assert set(op["operator"] for op in result["operators"]) <= {"CONV_2D", "RESHAPE"}
 
 
-def test_cli_remote_dry_runs(tmp_path):
+def test_cli_remote_dry_runs(tmp_path, dummy_runner):
     import subprocess
     import sys
     root = Path(__file__).resolve().parents[1]
     cases = [
         (["compile", "m.tflite", "--output", "m.vnnx", "--dry-run"], "vnnx_compile -c V250 -t"),
         (["sim", "m.vnnx", "--input", "in.npy", "--output", "out.npz", "--dry-run"], "vbx_sim_run.py"),
-        (["infer", "m.vnnx", "--input", "in.bin", "--output", "out.bin", "--json", "meta.json", "--dry-run"], "--timeout-ms 5000 --json"),
+        (["infer", "m.vnnx", "--input", "in.bin", "--output", "out.bin", "--json", "meta.json", "--runner", str(dummy_runner), "--dry-run"], "--timeout-ms 5000 --json"),
     ]
     for args, expected in cases:
         completed = subprocess.run([sys.executable, "-m", "pfkit", *args], cwd=root, text=True, capture_output=True)

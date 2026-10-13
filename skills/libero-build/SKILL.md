@@ -16,6 +16,9 @@ Set `DEVICE`, `VBX_SIZE`, `CORE_VERSION`, `WORK_DIR`, and `LIBERO`.
 Use an absolute, new `WORK_DIR` and keep its logs.
 The script copies the reference design into that directory.
 It does not program the kit.
+The 2026-10-12 build met timing and exported a job
+(`evidence/2026-10-12-libero-build/`). That image has not been programmed
+or tested on the kit; earlier kit runs used the case-study image.
 
 ## Before build
 
