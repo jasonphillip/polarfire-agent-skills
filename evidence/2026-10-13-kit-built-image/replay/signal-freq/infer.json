@@ -1,0 +1,108 @@
+{
+  "attempt_id": "manual-20261013-162217-42043961",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "mkdir -p /tmp/pfkit/manual-20261013-162217-42043961"
+      ],
+      "command": "ssh root@<kit> 'mkdir -p /tmp/pfkit/manual-20261013-162217-42043961'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:22:18.011407+00:00",
+      "started_utc": "2026-10-13T16:22:17.247324+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<kit-root>/hw/vbx_run",
+        "reports/20261013-122217-signal-freq-replay/model.vnnx",
+        "reports/20261013-122217-signal-freq-replay/input.int8.bin",
+        "root@<kit>:/tmp/pfkit/manual-20261013-162217-42043961/"
+      ],
+      "command": "scp <kit-root>/hw/vbx_run reports/20261013-122217-signal-freq-replay/model.vnnx reports/20261013-122217-signal-freq-replay/input.int8.bin root@<kit>:/tmp/pfkit/manual-20261013-162217-42043961/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:22:18.862827+00:00",
+      "started_utc": "2026-10-13T16:22:18.011692+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "/tmp/pfkit/manual-20261013-162217-42043961/vbx_run --model /tmp/pfkit/manual-20261013-162217-42043961/model.vnnx --input /tmp/pfkit/manual-20261013-162217-42043961/input.int8.bin --output /tmp/pfkit/manual-20261013-162217-42043961/hw.bin --timeout-ms 5000 --json /tmp/pfkit/manual-20261013-162217-42043961/hw.json"
+      ],
+      "command": "ssh root@<kit> '/tmp/pfkit/manual-20261013-162217-42043961/vbx_run --model /tmp/pfkit/manual-20261013-162217-42043961/model.vnnx --input /tmp/pfkit/manual-20261013-162217-42043961/input.int8.bin --output /tmp/pfkit/manual-20261013-162217-42043961/hw.bin --timeout-ms 5000 --json /tmp/pfkit/manual-20261013-162217-42043961/hw.json'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:22:20.421057+00:00",
+      "started_utc": "2026-10-13T16:22:18.863109+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/manual-20261013-162217-42043961/hw.bin",
+        "reports/20261013-122217-signal-freq-replay/hw.bin"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/manual-20261013-162217-42043961/hw.bin reports/20261013-122217-signal-freq-replay/hw.bin",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:22:21.236703+00:00",
+      "started_utc": "2026-10-13T16:22:20.421340+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/manual-20261013-162217-42043961/hw.json",
+        "reports/20261013-122217-signal-freq-replay/hw.json"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/manual-20261013-162217-42043961/hw.json reports/20261013-122217-signal-freq-replay/hw.json",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T16:22:22.032368+00:00",
+      "started_utc": "2026-10-13T16:22:21.237008+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/kit.yaml",
+    "values": {
+      "remote_dir": "/tmp/pfkit",
+      "ssh_target": "root@<kit>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      }
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "0ebe46ed1fcea46fbbcfeec80e1386e0ead4355d3c58e5bed6b3c43a37c9f309",
+    "payload_sha256": null,
+    "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-122217-signal-freq-replay/hw.bin",
+    "sha256": "f3e1261b53f12fd8016237e18dd15164b6c6ea250c4367f635d96914492ad40d",
+    "size_bytes": 64
+  },
+  "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771",
+  "status": "completed"
+}

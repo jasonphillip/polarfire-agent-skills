@@ -1,0 +1,12 @@
+{
+  "attempt_id": "20261013-161930-0dbc65c1",
+  "inputs": {
+    "model_sha256": "5e987f896bfc25dda903e167245c5b9b331ee366c5862380ec672abe3a6742ad",
+    "payload_sha256": null
+  },
+  "mae": 0.6749171018600464,
+  "rmse": 0.8896375894546509,
+  "samples": 128,
+  "status": "completed",
+  "units": "hertz"
+}
