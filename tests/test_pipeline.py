@@ -292,7 +292,7 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
 
 
 @pytest.mark.ml
-@pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp"])
+@pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp", "odmr-fcnn"])
 def test_examples_through_inspect(name, tmp_path):
     import tensorflow as tf
     from pfkit.pipeline import data, train, evaluate, export
@@ -319,7 +319,11 @@ def test_examples_through_inspect(name, tmp_path):
     assert interpreter.get_input_details()[0]["dtype"] == np.int8
     assert interpreter.get_output_details()[0]["dtype"] == np.int8
     assert len(manifest["sha256"]) == 64
-    assert manifest["export_form"] == "conv1x1"
+    if cfg["adapter"] == "mlp":
+        assert manifest["export_form"] == "conv1x1"
+    else:
+        assert manifest["adapter"] == "conv2d_1k"
+    assert not result["blocking_flags"]
     assert set(op["operator"] for op in result["operators"]) <= {"CONV_2D", "RESHAPE"}
 
 
