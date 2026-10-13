@@ -1,0 +1,35 @@
+PASS: 12 skills, 6 JSON files, source paths, and public text
+.............                                                            [100%]
+=============================== warnings summary ===============================
+tests/test_pipeline.py::test_mlp_export_forms_and_fc_chain_flag
+tests/test_pipeline.py::test_mlp_export_forms_and_fc_chain_flag
+tests/test_pipeline.py::test_examples_through_inspect[signal-freq]
+tests/test_pipeline.py::test_examples_through_inspect[odmr-mlp]
+  /home/badwillhunt/projects/polarfire-agent-skills/.venv/lib/python3.11/site-packages/tensorflow/lite/python/convert.py:953: UserWarning: Statistics for quantized inputs were expected, but not specified; continuing anyway.
+    warnings.warn(
+
+tests/test_pipeline.py::test_examples_through_inspect[odmr-mlp]
+  /home/badwillhunt/projects/polarfire-agent-skills/.venv/lib/python3.11/site-packages/qutip/__init__.py:24: UserWarning: matplotlib not found: Graphics will not work.
+    warnings.warn("matplotlib not found: Graphics will not work.")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+13 passed, 5 warnings in 5.77s
+make: Entering directory '/home/badwillhunt/projects/polarfire-agent-skills/hw'
+ok: exit 0; json fields ok
+never_completes: exit 4; json fields ok
+start_blocks: exit 4; json fields ok
+error_register: exit 5; json fields ok
+init_fails: exit 3; json fields ok
+init_fails: exit 2; json fields ok
+v500_preflight: exit 2 before fake init
+ok: exit 2; json fields ok
+bad_input_size: exit 2
+make: Leaving directory '/home/badwillhunt/projects/polarfire-agent-skills/hw'
+Validating marketplace manifest: /home/badwillhunt/projects/polarfire-agent-skills/.claude-plugin/marketplace.json
+
+ℹ Advice (does not change the verdict):
+
+  ❯ /home/badwillhunt/projects/polarfire-agent-skills/README.md: This README has no line that installs "polarfire-agent-skills" from a marketplace. Add the install line, which works in one step on Claude Code 2.1.275 or later.
+      /plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills
+
+✔ Validation passed
