@@ -23,6 +23,8 @@ def main():
         samples = [samples]
     elif samples.ndim > 1 and samples.shape[1:] == shape:
         samples = list(samples)
+    elif shape[0] == 1 and samples.ndim == len(shape) and samples.shape[1:] == shape[1:]:
+        samples = [sample.reshape(shape) for sample in samples]
     elif samples.ndim == 1 and samples.size == np.prod(shape):
         samples = [samples]
     elif samples.ndim == 2 and samples.shape[1] == np.prod(shape):
