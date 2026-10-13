@@ -174,6 +174,13 @@ def _payload_for_infer(input_file, dry_run=False, overwrite=False):
     return binary
 
 
+def _require_runner(runner):
+    path = Path(runner)
+    if not path.is_file():
+        label = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+        raise ValueError(f"runner not found: {label}; build it on the tools host (docs/hardware.md, Runner)")
+
+
 def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
                   input_file=None, metadata=None, runner=None, timeout_ms=5000,
                   attempt_id=None, overwrite_payload=False):
@@ -183,14 +190,16 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
     from .remote_ops import _scp, compile_plan, infer_plan, load_config, run_plan, sim_plan
 
     if stage == "infer":
+        _require_runner(runner)
         input_file = _payload_for_infer(input_file, dry_run=dry_run, overwrite=overwrite_payload)
 
-    manifest = Path(run_dir) / f"{stage}.json" if run_dir else None
+    manifest = Path(run_dir) / f"{stage}.json" if run_dir and not dry_run else None
     if manifest:
         manifest.parent.mkdir(parents=True, exist_ok=True)
         attempt_id = attempt_id or attempt.manual(run_dir)["attempt_id"]
     else:
-        attempt_id = attempt_id or datetime.now(timezone.utc).strftime("manual-%Y%m%d-%H%M%S-") + secrets.token_hex(4)
+        existing = attempt.current(run_dir) if run_dir else None
+        attempt_id = attempt_id or (existing["attempt_id"] if existing else None) or datetime.now(timezone.utc).strftime("manual-%Y%m%d-%H%M%S-") + secrets.token_hex(4)
     cfg = load_config(config, "kit" if stage == "infer" else "toolshost")
     result = {"status": "not run", "commands": [], "error": None,
               "attempt_id": attempt_id, "inputs": {
@@ -259,6 +268,17 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
                 npu_error, exit_code = details["npu_error"], details["exit_code"]
                 if completed != samples or npu_error != 0 or exit_code != 0:
                     raise ValueError(f"runner completed {completed} of {samples}, npu_error {npu_error}, exit {exit_code}")
+                descriptors = details["outputs"]
+                if not descriptors or any(type(item.get("offset")) is not int or item["offset"] < 0 or
+                                          type(item.get("bytes")) is not int or item["bytes"] < 1
+                                          for item in descriptors):
+                    raise ValueError("runner JSON has invalid output descriptors")
+                per_sample = max(item["offset"] + item["bytes"] for item in descriptors)
+                expected_size = samples * per_sample
+                actual_size = Path(output).stat().st_size
+                if actual_size != expected_size:
+                    raise ValueError(f"hw.bin size {actual_size} bytes; expected {expected_size} bytes "
+                                     f"({samples} samples x {per_sample} bytes)")
             result["output"] = {"path": str(output), "size_bytes": Path(output).stat().st_size,
                                 "sha256": sha256(output)}
             result["status"] = "completed"
@@ -352,6 +372,8 @@ def _dispatch(args):
         from .reporting import append_log
         stage = "not run"
         try:
+            if sequence.index(args.until) >= sequence.index("infer"):
+                _require_runner(ROOT / "hw" / "vbx_run")
             print(f"samples: {args.samples}" + (" (one-sample fast path)" if args.samples == 1 else ""),
                   flush=True)
             for stage in sequence[:sequence.index(args.until)+1]:
@@ -418,7 +440,7 @@ def main(argv=None):
     except Exception as error:
         print(f"pfkit: {error}", file=sys.stderr)
         code = 1
-    if getattr(args, "run_dir", None):
+    if getattr(args, "run_dir", None) and not getattr(args, "dry_run", False):
         append_log(args.run_dir, "pfkit " + " ".join(sys.argv[1:] if argv is None else argv), code)
         if code == 0 and args.command in ("example", "report"):
             from .reporting import report

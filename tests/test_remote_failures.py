@@ -140,6 +140,37 @@ def test_partial_completion_is_failed(tmp_path, monkeypatch):
     assert comparison["status"] == "incomplete" and comparison["pass"] is False
 
 
+@pytest.mark.parametrize("output_size", [3, 5])
+def test_infer_rejects_wrong_output_byte_count(tmp_path, monkeypatch, output_size):
+    from pfkit import cli, remote_ops
+
+    hw_json = tmp_path / "hw.json"
+    hw_bin = tmp_path / "hw.bin"
+    runner = tmp_path / "vbx_run"
+    runner.write_bytes(b"runner")
+
+    def fake(argv, text=True, capture_output=True, timeout=None):
+        if argv[0] == "scp" and argv[-1] == str(hw_json):
+            hw_json.write_text(json.dumps({"exit_code": 0, "samples": 2, "completed": 2,
+                                           "npu_error": 0, "outputs": [
+                                               {"offset": 0, "bytes": 1},
+                                               {"offset": 1, "bytes": 1}]}))
+        if argv[0] == "scp" and argv[-1] == str(hw_bin):
+            hw_bin.write_bytes(bytes(output_size))
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(remote_ops.subprocess, "run", fake)
+    payload = tmp_path / "input.int8.bin"
+    payload.write_bytes(bytes(range(4)))
+    code = cli.main(["infer", "m.vnnx", "--input", str(payload), "--output", str(hw_bin),
+                     "--json", str(hw_json), "--runner", str(runner),
+                     "--config", str(ROOT / "kit.yaml"), "--run-dir", str(tmp_path)])
+    assert code == 1
+    record = json.loads((tmp_path / "infer.json").read_text())
+    assert record["status"] == "failed" and "hw.bin size" in record["error"]
+    assert "expected 4 bytes" in record["error"]
+
+
 def test_example_run_failure_report(tmp_path, monkeypatch):
     from pfkit import cli, pipeline, reporting
 

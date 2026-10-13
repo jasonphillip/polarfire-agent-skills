@@ -319,6 +319,21 @@ def check_prerequisites(run_dir, sim=None, hw=None):
 
 
 def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scope="requested"):
+    from .attempt import manual
+
+    attempt_id = manual(run_dir)["attempt_id"]
+    path = Path(run_dir) / "compare.json"
+    write_json(path, {"status": "error", "pass": False, "reason": "comparison in progress",
+                      "attempt_id": attempt_id})
+    try:
+        return _compare_impl(name, run_dir, inputs, sim, hw, lsb_tolerance, scope)
+    except Exception as error:
+        write_json(path, {"status": "stale" if str(error).startswith("stale:") else "error",
+                          "pass": False, "reason": str(error), "attempt_id": attempt_id})
+        raise
+
+
+def _compare_impl(name, run_dir, inputs, sim, hw, lsb_tolerance, scope):
     if scope not in ("requested", "full"):
         raise ValueError(f"Unknown comparison scope: {scope}")
     from .attempt import manual
@@ -357,7 +372,7 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
     sample_count = len(sim_raw) if sim_raw is not None else 1
     payload_manifest = Path(run_dir) / "input.manifest.json"
     manifest = None
-    if inputs is None and payload_manifest.is_file():
+    if payload_manifest.is_file():
         manifest = json.loads(payload_manifest.read_text())
         payload = np.load(Path(run_dir) / "input.int8.npy", allow_pickle=False)
         if (payload_sha256(payload) != manifest["payload_sha256"] or
@@ -366,6 +381,7 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
             raise ValueError("payload hash mismatch")
         if (Path(run_dir) / "input.int8.bin").read_bytes() != np.ascontiguousarray(payload).tobytes():
             raise ValueError("payload hash mismatch")
+    if inputs is None and manifest is not None:
         selected = manifest["selection"]
         indices = selected["indices"]
         if len(indices) != len(payload) or len(indices) < 1:
@@ -389,9 +405,15 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
     tflite_raw, tflite_float = [], []
     scale, zero = i["quantization"]
     selected_quantized = to_model_layout(quantize(x, scale, zero), cfg["adapter"])
-    if manifest is not None and (payload_sha256(selected_quantized) != manifest["payload_sha256"] or
+    comparison_payload_hash = payload_sha256(selected_quantized)
+    if manifest is not None and (comparison_payload_hash != manifest["payload_sha256"] or
                                  manifest["quantization"] != {"scale": float(scale), "zero_point": int(zero)}):
         raise ValueError("payload hash mismatch")
+    for artifact, stage in ((sim, "sim"), (hw, "infer")):
+        if artifact is not None:
+            record = json.loads((Path(run_dir) / f"{stage}.json").read_text())
+            if record.get("status") == "completed" and record.get("inputs", {}).get("payload_sha256") != comparison_payload_hash:
+                raise ValueError(f"payload hash mismatch: {stage}.json differs from comparison input")
     for sample in selected_quantized:
         value = sample[None]
         if cfg["adapter"] == "conv2d_1k":

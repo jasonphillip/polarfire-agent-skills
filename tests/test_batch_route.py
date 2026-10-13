@@ -80,6 +80,26 @@ def test_prepare_input_cli_forwards_selection(tmp_path, monkeypatch, capsys):
     assert '"samples": 8' in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("until", ["infer", "compare"])
+def test_example_preflights_missing_runner_before_remote_stages(tmp_path, monkeypatch, capsys, until):
+    from pfkit import cli, pipeline
+
+    monkeypatch.setattr(cli, "ROOT", tmp_path / "missing-root")
+    monkeypatch.setattr(cli, "_remote_stage", lambda *a, **k: pytest.fail("remote stage started"))
+    monkeypatch.setattr("pfkit.reporting.report", lambda directory: tmp_path / "summary.md")
+    monkeypatch.setattr(pipeline, "data", lambda *a, **k: None)
+    monkeypatch.setattr(pipeline, "train", lambda *a, **k: None)
+    monkeypatch.setattr(pipeline, "evaluate", lambda *a, **k: None)
+    monkeypatch.setattr(pipeline, "export", lambda *a, **k: None)
+    monkeypatch.setattr("pfkit.inspect.inspect_model", lambda *a, **k: {
+        "unsupported": [], "limit_violations": [], "blocking_flags": []})
+    monkeypatch.setattr(cli, "_stamp_local_stage", lambda *a, **k: None)
+    code = cli.main(["example", "run", "signal-freq", "--until", until,
+                     "--run-dir", str(tmp_path / "run")])
+    assert code == 1
+    assert "runner not found: hw/vbx_run; build it on the tools host (docs/hardware.md, Runner)" in capsys.readouterr().err
+
+
 @pytest.mark.ml
 def test_compare_reports_batch_metadata(tmp_path, monkeypatch):
     import tensorflow as tf

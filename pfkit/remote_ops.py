@@ -47,7 +47,7 @@ def _r(path):
 
 
 def _scp(target, path):
-    return f"{target}:{_r(path)}"
+    return f"{target}:{path}"
 
 
 def tools_command(cfg, script):

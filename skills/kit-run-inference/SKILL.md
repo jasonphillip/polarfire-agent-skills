@@ -39,7 +39,7 @@ It writes both files and a manifest with sample indices and the payload hash.
 Its default is one sample, labeled as the one-sample fast path.
 Use `--selection random --seed N` for a repeatable random selection.
 Keep the fixed batch and input layout from the example contract.
-The binary file must contain the model's exact input byte count.
+The binary file must contain K * input_bytes bytes, where K >= 1 matches the selected sample count.
 Use `--dry-run` to review each remote command before execution.
 A dry run is a plan, not a successful remote stage.
 

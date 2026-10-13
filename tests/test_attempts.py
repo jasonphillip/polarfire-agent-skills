@@ -79,13 +79,18 @@ def test_manual_stages_share_attempt_and_record_input_hashes(tmp_path, monkeypat
     np.save(payload, np.array([[1, 2]], dtype=np.int8))
     binary = tmp_path / "input.int8.bin"
     binary.write_bytes(b"\x01\x02")
+    np.savez(tmp_path / "sim.npz", outputs=np.zeros((1, 1), dtype=np.int8))
+    (tmp_path / "hw.bin").write_bytes(b"\0")
+    (tmp_path / "hw.json").write_text(json.dumps({
+        "samples": 1, "completed": 1, "npu_error": 0, "exit_code": 0,
+        "outputs": [{"offset": 0, "bytes": 1}]}))
     monkeypatch.setattr(remote_ops, "run_plan", lambda commands, **kwargs: [])
     for stage, extra in (("sim", ["--input", str(payload)]),
                          ("infer", ["--input", str(binary), "--json", str(tmp_path / "hw.json")])):
         output = tmp_path / ("sim.npz" if stage == "sim" else "hw.bin")
         config = ROOT / ("toolshost.yaml" if stage == "sim" else "kit.yaml")
         args = [stage, str(model), *extra, "--output", str(output), "--config", str(config),
-                "--run-dir", str(tmp_path), "--dry-run"]
+                "--run-dir", str(tmp_path)]
         assert cli.main(args) == 0
     sim = json.loads((tmp_path / "sim.json").read_text())
     infer = json.loads((tmp_path / "infer.json").read_text())

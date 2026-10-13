@@ -70,7 +70,7 @@ It copies the VNNX file back and records command output, exit codes, size and SH
 `infer` copies the runner, model and binary input to the kit. It copies binary output and JSON metadata back.
 `infer --input input.int8.npy` plans a conversion to the adjacent `input.int8.bin`.
 Dry runs print the sample count, byte count, payload SHA-256 and every SSH and SCP command.
-They do not write the binary payload or contact either host. An explicit `--run-dir` can write plan and attempt records.
+They print plans without writing files in the run directory or contacting either host.
 During execution, an existing identical binary is reused. A different binary causes an error; use
 `--overwrite-payload` to replace it intentionally. The output and runner JSON directories are created before transfer.
 Inference plans accept a `.bin` path only; the CLI performs `.npy` conversion for execution.
@@ -81,7 +81,7 @@ and `size_config` for the tools host. Optional `timeouts` are seconds per remote
 `{compile: null, sim: 1800, infer: 300}` by default. `null` means no subprocess timeout.
 Set a longer compile timeout only when needed. The runner's `--timeout-ms` is a separate device-call limit.
 Each remote command uses the stage timeout, including transfers. A timeout is recorded in the stage manifest
-when `--run-dir` is set. Remote paths with spaces are quoted in SSH scripts and SCP targets.
+when `--run-dir` is set. SSH scripts quote remote paths; default SFTP-mode SCP targets carry raw paths, including spaces.
 `compare` checks float and TFLite outputs. It checks simulator and hardware outputs when supplied.
 Each stage records an `attempt_id` from `attempt.json`. Compare rejects stale
 model or payload artifacts. `status: passed` means the requested checks

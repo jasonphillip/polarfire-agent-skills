@@ -43,6 +43,41 @@ def append_log(run_dir, command, code):
                                  "command": command, "exit_code": code}) + "\n")
 
 
+def _comparison_current(directory, record, attempt_id):
+    payload_hash = record.get("payload_sha256")
+    model_hash = record.get("inputs", {}).get("model_sha256")
+    model = directory / "model.vnnx"
+    if model_hash and (not model.is_file() or sha256(model) != model_hash):
+        return False
+    manifest_path = directory / "input.manifest.json"
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text())
+        if payload_hash != manifest.get("payload_sha256"):
+            return False
+        for filename, key in (("input.int8.npy", "npy_sha256"), ("input.int8.bin", "bin_sha256")):
+            path = directory / filename
+            if not path.is_file() or sha256(path) != manifest.get(key):
+                return False
+    checks = record.get("checks_run", [])
+    stages = ("sim", "infer") if "sim_vs_hw" in checks else (
+        ("sim",) if "tflite_vs_sim" in checks else ())
+    for stage in stages:
+        path = directory / f"{stage}.json"
+        if not path.is_file():
+            return False
+        stage_record = json.loads(path.read_text())
+        inputs = stage_record.get("inputs", {})
+        output = stage_record.get("output", {})
+        artifact = Path(output.get("path", ""))
+        if not artifact.is_absolute():
+            artifact = directory / artifact
+        if (stage_record.get("status") != "completed" or stage_record.get("attempt_id") != attempt_id or
+                inputs.get("payload_sha256") != payload_hash or inputs.get("model_sha256") != model_hash or
+                not output.get("path") or not artifact.is_file() or output.get("sha256") != sha256(artifact)):
+            return False
+    return True
+
+
 def report(run_dir):
     directory = Path(run_dir)
     directory.mkdir(parents=True, exist_ok=True)
@@ -70,9 +105,12 @@ def report(run_dir):
             status = record.get("status", "not run")
             if attempt_id is not None and source_id != attempt_id:
                 label = f"stale (attempt {source_id or 'unknown'})"
-            elif status == "failed":
-                label = "failed"
-            elif status in ("completed", "passed") and source_id is not None and source_id == attempt_id:
+            elif status in ("failed", "error", "stale"):
+                label = status
+            elif (name == "compare.json" and status == "passed" and record.get("pass") is True
+                  and source_id is not None and source_id == attempt_id):
+                label = "recorded" if _comparison_current(directory, record, attempt_id) else "stale"
+            elif name != "compare.json" and status in ("completed", "passed") and source_id is not None and source_id == attempt_id:
                 label = "recorded"
             else:
                 label = "not run"

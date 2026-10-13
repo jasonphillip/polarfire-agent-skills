@@ -30,6 +30,30 @@ def test_dry_run_preserves_existing_bin_and_runs_nothing(tmp_path, monkeypatch, 
     assert f"would write {existing} (2 samples, 8 bytes, sha256 {hashlib.sha256(values.tobytes()).hexdigest()})" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("stage", ["compile", "sim", "infer"])
+def test_dry_run_writes_nothing_in_run_dir_and_preserves_sim_record(tmp_path, monkeypatch, stage):
+    from pfkit import attempt, cli, remote_ops
+
+    monkeypatch.setattr(attempt, "_dirty", lambda: False)
+    monkeypatch.setattr(remote_ops.subprocess, "run", lambda *a, **k: pytest.fail("remote command ran"))
+    (tmp_path / "model.vnnx").write_bytes(b"model")
+    np.save(tmp_path / "input.int8.npy", np.zeros((2, 4), dtype=np.int8))
+    (tmp_path / "input.int8.bin").write_bytes(bytes(8))
+    (tmp_path / "sim.json").write_text('{"status":"completed","sentinel":true}')
+    before = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    if stage == "compile":
+        args = ["compile", str(tmp_path / "model.vnnx"), "--output", str(tmp_path / "out.vnnx")]
+    elif stage == "sim":
+        args = ["sim", str(tmp_path / "model.vnnx"), "--input", str(tmp_path / "input.int8.npy"),
+                "--output", str(tmp_path / "out.npz")]
+    else:
+        args = ["infer", str(tmp_path / "model.vnnx"), "--input", str(tmp_path / "input.int8.bin"),
+                "--output", str(tmp_path / "hw.bin"), "--json", str(tmp_path / "hw.json")]
+    assert cli.main([*args, "--run-dir", str(tmp_path), "--dry-run"]) == 0
+    after = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    assert after == before
+
+
 def test_execution_refuses_to_overwrite_different_bin(tmp_path, monkeypatch, capsys):
     from pfkit import cli, remote_ops
     monkeypatch.setattr(remote_ops.subprocess, "run", lambda *a, **k: pytest.fail("subprocess ran"))
@@ -52,6 +76,18 @@ def test_empty_npy_rejected_before_host_plan(tmp_path, monkeypatch, capsys):
     assert "K >= 1" in capsys.readouterr().err
 
 
+def test_infer_missing_runner_fails_before_payload_conversion(tmp_path, monkeypatch, capsys):
+    from pfkit import cli, remote_ops
+
+    monkeypatch.setattr(remote_ops, "run_plan", lambda *a, **k: pytest.fail("remote plan ran"))
+    npy = tmp_path / "input.int8.npy"
+    np.save(npy, np.zeros((2, 4), dtype=np.int8))
+    runner = tmp_path / "missing" / "vbx_run"
+    assert cli.main([*infer_args(tmp_path, npy), "--runner", str(runner)]) == 1
+    assert not npy.with_suffix(".bin").exists()
+    assert f"runner not found: {runner}; build it on the tools host (docs/hardware.md, Runner)" in capsys.readouterr().err
+
+
 def test_execution_allows_identical_bin_and_explicit_overwrite(tmp_path, monkeypatch, capsys):
     from pfkit import cli, remote_ops
     monkeypatch.setattr(remote_ops, "run_plan", lambda commands, **kwargs: [])
@@ -69,26 +105,27 @@ def test_execution_allows_identical_bin_and_explicit_overwrite(tmp_path, monkeyp
     assert binary.read_bytes() == values.tobytes()
 
 
-def test_remote_dir_with_space_is_quoted(tmp_path):
+def test_remote_dir_with_space_uses_raw_sftp_targets_and_quoted_ssh_scripts(tmp_path):
     from pfkit.remote_ops import compile_plan, infer_plan, sim_plan
     kit = tmp_path / "kit.yaml"
     kit.write_text(yaml.safe_dump({"ssh_target": "kit", "remote_dir": "/tmp/pf kit"}))
     plan = infer_plan("m.vnnx", "in.bin", "hw.bin", "hw.json", "vbx_run", kit, 1000, attempt_id="A1")
     assert "'/tmp/pf kit/A1'" in plan[0][2]
-    assert plan[1][-1] == "kit:'/tmp/pf kit/A1/'"
+    assert plan[1][-1] == "kit:/tmp/pf kit/A1/"
     assert "'/tmp/pf kit/A1/vbx_run'" in plan[2][2]
-    assert plan[3][1] == "kit:'/tmp/pf kit/A1/hw.bin'"
+    assert plan[3][1] == "kit:/tmp/pf kit/A1/hw.bin"
+    assert plan[4][1] == "kit:/tmp/pf kit/A1/hw.json"
     tools = tmp_path / "toolshost.yaml"
     tools.write_text(yaml.safe_dump({"ssh_target": "tools", "remote_work_dir": "/tmp/pf kit", "size_config": "V250"}))
     sim = sim_plan("m.vnnx", "in.npy", "out.npz", tools, attempt_id="A1")
-    assert sim[1][-1] == "tools:'/tmp/pf kit/A1/'"
-    assert sim[3][1] == "tools:'/tmp/pf kit/A1/out.npz'"
+    assert sim[1][-1] == "tools:/tmp/pf kit/A1/"
+    assert sim[3][1] == "tools:/tmp/pf kit/A1/out.npz"
     inner = shlex.split(sim[2][2])[-1]
     assert "mkdir -p '/tmp/pf kit/A1'" in inner
     assert "'/tmp/pf kit/A1/vbx_sim_run.py'" in inner
     compiled = compile_plan("m.tflite", "m.vnnx", tools, attempt_id="A1")
-    assert compiled[1][-1] == "tools:'/tmp/pf kit/A1/m.tflite'"
-    assert compiled[3][1] == "tools:'/tmp/pf kit/A1/m.vnnx'"
+    assert compiled[1][-1] == "tools:/tmp/pf kit/A1/m.tflite"
+    assert compiled[3][1] == "tools:/tmp/pf kit/A1/m.vnnx"
     assert "mkdir -p '/tmp/pf kit/A1'" in shlex.split(compiled[2][2])[-1]
 
 
@@ -131,7 +168,7 @@ def test_stage_uses_configured_timeout(tmp_path, monkeypatch):
     observed = []
     monkeypatch.setattr(remote_ops, "run_plan", lambda commands, **kwargs: observed.append(kwargs["timeout_s"]) or [])
     cli._remote_stage("infer", "m.vnnx", tmp_path / "hw.bin", cfg, dry_run=True,
-                      input_file="in.bin", metadata=tmp_path / "hw.json", runner="vbx_run")
+                      input_file="in.bin", metadata=tmp_path / "hw.json", runner=ROOT / "hw" / "vbx_run")
     assert observed == [7]
 
 
@@ -140,7 +177,7 @@ def test_execution_creates_output_directories_only_when_running(tmp_path, monkey
     monkeypatch.setattr(remote_ops, "run_plan", lambda commands, **kwargs: [])
     output = tmp_path / "outputs" / "hw.bin"
     metadata = tmp_path / "metadata" / "hw.json"
-    kwargs = dict(input_file="in.bin", metadata=metadata, runner="vbx_run")
+    kwargs = dict(input_file="in.bin", metadata=metadata, runner=ROOT / "hw" / "vbx_run")
     cli._remote_stage("infer", "m.vnnx", output, ROOT / "kit.yaml", dry_run=True, **kwargs)
     assert not output.parent.exists() and not metadata.parent.exists()
     with pytest.raises(ValueError, match="output missing"):
