@@ -27,12 +27,17 @@ The third command needs the configured kit and built runner.
 ```sh
 KIT_ROOT=/absolute/path/to/polarfire-agent-skills
 "$KIT_ROOT/.venv/bin/python" -m pfkit compile "$KIT_ROOT/reports/signal-local/model.tflite" --output "$KIT_ROOT/reports/signal-local/model.vnnx" --run-dir "$KIT_ROOT/reports/signal-local"
+"$KIT_ROOT/.venv/bin/python" -m pfkit prepare-input signal-freq --run-dir "$KIT_ROOT/reports/signal-local" --samples 64
 "$KIT_ROOT/.venv/bin/python" -m pfkit sim "$KIT_ROOT/reports/signal-local/model.vnnx" --input "$KIT_ROOT/reports/signal-local/input.int8.npy" --output "$KIT_ROOT/reports/signal-local/sim.npz" --run-dir "$KIT_ROOT/reports/signal-local"
 "$KIT_ROOT/.venv/bin/python" -m pfkit infer "$KIT_ROOT/reports/signal-local/model.vnnx" --input "$KIT_ROOT/reports/signal-local/input.int8.bin" --output "$KIT_ROOT/reports/signal-local/hw.bin" --json "$KIT_ROOT/reports/signal-local/hw.json" --run-dir "$KIT_ROOT/reports/signal-local"
 ```
 
 The `example run` path prepares both quantized input files before sim.
-For manual stages, prepare `input.int8.npy` and `input.int8.bin` from the inspected TFLite input scale and zero point.
+For manual stages, `prepare-input` uses the inspected TFLite input scale and zero point.
+It writes both files and a manifest with sample indices and the payload hash.
+`example run signal-freq --until compare --samples 64` carries one held-out selection through all stages.
+Its default is one sample, labeled as the one-sample fast path.
+Use `--selection random --seed N` for a repeatable random selection.
 Keep the fixed batch and input layout from the example contract.
 The binary file must contain the model's exact input byte count.
 Use `--dry-run` to review each remote command before execution.

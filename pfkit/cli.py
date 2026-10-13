@@ -16,6 +16,13 @@ def _run_dir(args):
     return Path(args.run_dir)
 
 
+def _positive_samples(value):
+    count = int(value)
+    if count < 1:
+        raise argparse.ArgumentTypeError("samples must be >= 1")
+    return count
+
+
 def parser():
     p = argparse.ArgumentParser(prog="pfkit")
     sub = p.add_subparsers(dest="command", required=True)
@@ -65,6 +72,13 @@ def parser():
     infer.add_argument("--dry-run", action="store_true")
     infer.add_argument("--overwrite-payload", action="store_true",
                        help="replace an adjacent .bin when it differs from the .npy input")
+    prepare = sub.add_parser("prepare-input")
+    prepare.add_argument("example")
+    prepare.add_argument("--run-dir", required=True)
+    prepare.add_argument("--samples", type=_positive_samples, default=1)
+    prepare.add_argument("--split", choices=("test",), default="test")
+    prepare.add_argument("--selection", choices=("first", "random"), default="first")
+    prepare.add_argument("--seed", type=int)
     compare = sub.add_parser("compare")
     compare.add_argument("example")
     compare.add_argument("--run-dir", required=True)
@@ -84,6 +98,9 @@ def parser():
     run.add_argument("--toolshost", default=str(ROOT / "toolshost.yaml"), help="tools host config for compile and sim")
     run.add_argument("--kit", default=str(ROOT / "kit.yaml"), help="kit config for infer")
     run.add_argument("--full", action="store_true")
+    run.add_argument("--samples", type=_positive_samples, default=1)
+    run.add_argument("--selection", choices=("first", "random"), default="first")
+    run.add_argument("--seed", type=int)
     run.add_argument("--sdk-root", help="VectorBlox SDK checkout containing docs/OPS.md")
     run.add_argument("--form", choices=("conv1x1", "fc"), default="conv1x1")
     run.add_argument("--allow-fc-chain", action="store_true", help="allow measured SDK 2.0.3 simulator failure")
@@ -287,6 +304,9 @@ def _dispatch(args):
         result = steps.evaluate(args.example, _run_dir(args))
         _stamp_local_stage(args.run_dir, "eval")
         return result
+    if args.command == "prepare-input":
+        return steps.prepare_input(args.example, _run_dir(args), samples=args.samples,
+                                   split=args.split, selection=args.selection, seed=args.seed)
     if args.command == "export":
         result = steps.export(args.example, _run_dir(args), args.form)
         _stamp_local_stage(args.run_dir, "export")
@@ -331,6 +351,8 @@ def _dispatch(args):
         from .reporting import append_log
         stage = "not run"
         try:
+            print(f"samples: {args.samples}" + (" (one-sample fast path)" if args.samples == 1 else ""),
+                  flush=True)
             for stage in sequence[:sequence.index(args.until)+1]:
                 print(f"{stage}: {args.name}", flush=True)
                 if stage == "data": result = steps.data(args.name, run_dir, args.full)
@@ -348,7 +370,8 @@ def _dispatch(args):
                     result = _remote_stage(stage, run_dir / "model.tflite", run_dir / "model.vnnx", args.toolshost, run_dir,
                                            attempt_id=attempt_id)
                 elif stage == "sim":
-                    steps.prepare_input(args.name, run_dir)
+                    steps.prepare_input(args.name, run_dir, samples=args.samples,
+                                        selection=args.selection, seed=args.seed)
                     result = _remote_stage(stage, run_dir / "model.vnnx", run_dir / "sim.npz", args.toolshost,
                                            run_dir, input_file=run_dir / "input.int8.npy", attempt_id=attempt_id)
                 elif stage == "infer":

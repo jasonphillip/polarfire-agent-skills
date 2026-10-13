@@ -374,6 +374,8 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
         sample_count = len(payload) if sim_raw is None else sample_count
     else:
         x = np.load(inputs) if inputs else parts["test_x"][:sample_count]
+        if sim_raw is None:
+            sample_count = len(x)
     if len(x) != sample_count and sim_raw is not None:
         raise ValueError(f"input/simulator sample count mismatch: {len(x)} != {sample_count}")
     if len(x.shape) == len(cfg["input"]["shape"]) - 1:
@@ -408,9 +410,14 @@ def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scop
     report = compare_arrays(floated, np.asarray(tflite_float), raw, sim_raw, hw_raw,
                             cfg["tolerances"]["float_tflite_abs"], cfg["tolerances"]["tflite_sim_lsb"],
                             lsb_tolerance, required=required)
-    if manifest is not None:
-        report.update(samples=len(selected_quantized), selection=manifest["selection"],
-                      payload_sha256=manifest["payload_sha256"])
+    report.update(samples=len(selected_quantized),
+                  split=manifest["selection"]["split"] if manifest else ("test" if inputs is None else "external"),
+                  selection=manifest["selection"] if manifest else
+                  {"method": "first" if inputs is None else "provided",
+                   "indices": list(range(len(selected_quantized))) if inputs is None else None},
+                  payload_sha256=manifest["payload_sha256"] if manifest else payload_sha256(selected_quantized),
+                  units=cfg["output"].get("units"),
+                  tolerances={**cfg["tolerances"], "sim_hw_lsb": lsb_tolerance})
     report.update(attempt_id=active_id,
                   inputs={"model_sha256": sha256(Path(run_dir) / "model.vnnx")
                           if (Path(run_dir) / "model.vnnx").is_file() else None,
