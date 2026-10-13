@@ -10,5 +10,5 @@ jobs:
       - run: pip install numpy pyyaml pytest
       - run: git clone https://github.com/jasonphillip/tychon-quantum-sensing deps/tychon-quantum-sensing && git -C deps/tychon-quantum-sensing checkout $(python -c "import yaml;print(next(r['commit'] for r in yaml.safe_load(open('deps.lock'))['repositories'] if r['name']=='tychon-quantum-sensing'))")
       - run: python tools/check_pack.py --source deps/tychon-quantum-sensing
+      # Host-only: the fake-driver test (make -C hw test) needs the user-fetched VectorBlox SDK and runs locally.
       - run: python -m pytest -m host -q -rs
-      - run: make -C hw test NATIVE_CC=gcc PYTHON=python
