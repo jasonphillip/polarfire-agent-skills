@@ -5,10 +5,11 @@
 Run host checks with `.venv/bin/python -m pytest -m host -q -rs`.
 Run the Python 3.11 ML smoke tests with `.venv/bin/python -m pytest -m ml -q -rs`.
 Build and check the fake driver with `make -C hw test`.
+CI (`.github/workflows/host-checks.yml`) runs the pack check and the host tests only. The fake-driver build needs the user-fetched VectorBlox SDK headers, so it runs locally.
 Vendor-tool and hardware checks require manual runs on the tools host and kit; CI does not run them.
 Pytest reports skipped ML tests with their reason when torch or TensorFlow is unavailable.
 
-Each result names the machine role and the evidence available in this checkout. The Libero build is still running.
+Each result names the machine role and the evidence available in this checkout.
 
 | Stage | Host | Result | Evidence path |
 |---|---|---|---|
@@ -25,6 +26,7 @@ Each result names the machine role and the evidence available in this checkout. 
 | Hardened runner preflight and inference | Icicle Kit, same V250 image | The cross-built hardened runner refused V500 with exit 2 before SDK init, then completed a V250 run. | `evidence/2026-10-12-hardware/batch64/README.md` |
 | Held-out batch and timing | Tools-host simulator and Icicle Kit | For each example, 64 held-out samples gave 0 LSB for simulator versus hardware and TFLite versus simulator. Float versus TFLite max error was 0.0414 Hz for `signal-freq` and 1.6713 microtesla for `odmr-mlp`, within tolerance. One-sample medians over 200 repeats were 0.024 ms and 0.034 ms, respectively. | `evidence/2026-10-12-hardware/batch64/README.md`; `evidence/2026-10-12-hardware/batch64/signal-freq/`; `evidence/2026-10-12-hardware/batch64/odmr-mlp/` |
 | 64-sample route through `example run --samples 64` | tools host and kit | Not run on hardware as of this commit; the 2026-10-12 batch used a separate procedure. | `evidence/2026-10-12-hardware/batch64/README.md` |
+| `prepare-input --samples 64` payload regeneration | host | Both payloads match the 2026-10-12 batch inputs byte for byte. This did not run the simulator or kit. | `evidence/2026-10-13-release-readiness/payload-regeneration.md` |
 | Kit reference-design build | x86 Windows tools host, Libero SoC 2025.2 | Done 2026-10-12: `hw/build_reference_design.sh` (PIN_VLNV COREAXI4INTERCONNECT=2.9.100) exit 0 in 40 min 25 s; timing met (0 violations, worst slack 1.049 ns); job exported, sha256 6d5cae6c...; core 2.0.1 PRESET 0 confirmed in the generated component. First attempt without the pin failed on COREAXI4INTERCONNECT 3.0.130. Not programmed. | `evidence/2026-10-12-libero-build/` |
 | Secret scan | Release checkout | Scan reported hash false positives only, with no key, token, or password finding. | `evidence/2026-10-12-secret-scan.md` |
 
@@ -33,8 +35,8 @@ Libero build result (2026-10-12): the second attempt, with the COREAXI4INTERCONN
 ## Limits
 
 - No co-simulation was run.
-- The Libero build result is pending.
 - A kit-built image has not been programmed. Programming needs separate approval.
-- A forced NPU timeout was tested with the fake driver only, not on hardware.
+- Forced stuck-call timeout tests used `hw/tests/fake_vbx_cnn_api.c`, not the NPU.
+- The new 64-sample CLI route has not run on the kit.
 - A Codex plugin install and Cursor loading were not tested.
 - The `odmr-mlp` example needs Tk with Homebrew Python 3.11 on macOS. Installing `python-tk@3.11` resolved this in the clean-checkout run.

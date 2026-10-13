@@ -51,7 +51,11 @@ A timing claim needs the current timing report.
 ## Reporting rule
 
 Never write a number that was not read from tool output.
-Every result row cites a run directory file.
+Every number comes from a file in the run directory of the current attempt
+identified by `attempt.json`. Every result row cites that file.
+Read `compare.json` `status`, `complete`, and each check's `exact` value.
+Do not report `stale` or `failed` as a pass, and do not call a partial
+requested-check pass a complete deployment check.
 For hardware build results, cite the raw report outside the model run as well.
 Keep the original output when a parser fails.
 Do not mark an unparseable result as a pass.

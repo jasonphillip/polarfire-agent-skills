@@ -52,6 +52,10 @@ Hardware equality is exact by default.
 Use `--lsb-tolerance` only when the run states the changed bound.
 A missing simulator or hardware file leaves that comparison `not run`.
 Stop when a comparison reports a failed bound.
+Read `compare.json` `status`, `complete`, each row's `status` and `exact`,
+and `attempt_id`. `stale` and `failed` are non-passes. A `passed` result
+without `complete: true` is not full deployment validation.
+The new 64-sample CLI route has not run on the kit.
 
 ## Evidence
 

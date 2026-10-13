@@ -24,10 +24,15 @@ Each 64-sample held-out batch matched the simulator at 0 LSB.
 Claude Code used the local plugin through inspect. Codex CLI read the skill
 files directly and reached inspect. See `docs/validation.md` for exact
 results, machine roles, and evidence paths.
+These recorded assistant workflows reached inspect. They did not record an
+assistant-driven compile, simulation, or kit run.
 
 ## Known limits
 
 The kit's own Libero build ran on 2026-10-12 on the tools host: timing met, programming job exported, kit not programmed with it (docs/validation.md, evidence/2026-10-12-libero-build/).
+The new `prepare-input --samples 64` route regenerated both historical batch
+payloads byte for byte on the host. The new 64-sample CLI route has not run
+on the kit (`evidence/2026-10-13-release-readiness/payload-regeneration.md`).
 No co-simulation or forced hardware NPU timeout was run.
 A Codex plugin install and Cursor loading were not tested.
 Other boards, V sizes, and SDK 3.x are outside this release's validated path.

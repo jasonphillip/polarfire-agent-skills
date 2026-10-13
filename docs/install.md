@@ -27,9 +27,8 @@ The repository is public (since 2026-10-12). Install it from the marketplace:
 /plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills
 ```
 
-Tested on 2026-10-12 night from the command line (`claude plugin install polarfire-agent-skills --marketplace jasonphillip/polarfire-agent-skills`, Claude Code 2.1.296): the marketplace was added, the plugin installed at user scope as version 2026.10.0, then uninstalled again.
-
-Marketplace install: tested 2026-10-12
+Marketplace install: tested 2026-10-12 (user-scope install and uninstall,
+version 2026.10.0, Claude Code 2.1.296).
 
 For a local clone, start Claude Code with the plugin directory:
 
@@ -43,12 +42,15 @@ Enter this request in the client:
 Use the polarfire-bringup agent to run the signal-freq example through inspect.
 ```
 
-The marketplace command was tested as an install action on 2026-10-12.
-Claude Code 2.1.296 used the local plugin, the `dataset-and-training` skill,
-and the `polarfire-bringup` agent instructions on a clean clone.
-It ran `signal-freq` through inspect with exit 0 and reported the expected
-operators, flags, and eval MAE. Skill loading and remote execution are separate checks.
-Compile, simulation, and kit inference were not run through this client workflow.
+The recorded Claude Code workflow used a local plugin on a clean clone:
+
+- Installation: the marketplace install and uninstall above succeeded.
+- Skill loading: `dataset-and-training` and `polarfire-bringup` loaded locally.
+- Local execution: `signal-freq` reached inspect with exit 0 and reported operators, flags, and eval MAE.
+- Remote execution: compile, simulation, and kit inference were not run through this client workflow.
+
+The recorded Claude Code and Codex workflows reached inspect. No assistant-driven
+compile, simulation, or kit run is recorded in the 2026-10-12 client evidence.
 
 ## Codex CLI
 
@@ -79,6 +81,14 @@ Its plugin load, agent discovery, and skill invocation are untested.
 Use the Cursor documentation for the installed version before invoking this pack.
 
 ## Pipeline setup
+
+Prerequisites: Python 3.11 with this kit's pinned packages; SSH key access
+to the tools host and kit for remote stages; and Tk for the ODMR example on
+Homebrew Python. Inspect needs the VectorBlox SDK source checkout for
+`docs/OPS.md` (`pfkit deps fetch` or `--sdk-root`). The tools host needs
+Libero SoC 2025.2, SmartHLS 2025.2, and their licences. The kit needs a
+compatible image with `generic-uio` and the `udmabuf` DMA pool. This repo is
+Apache-2.0; vendor tools and SDK sources have separate licence terms.
 
 Create the kit environment from the checkout:
 

@@ -21,6 +21,12 @@ For `example run`, pass `--toolshost /absolute/path/to/private-toolshost.yaml` a
 `--kit /absolute/path/to/private-kit.yaml` to use private remote settings.
 These options default to `toolshost.yaml` and `kit.yaml` in the kit checkout.
 `--toolshost` applies to compile and sim; `--kit` applies to infer.
+`example run signal-freq --until compare --samples 64` selects the same 64
+held-out inputs for simulation, inference and comparison. The default is a
+labeled one-sample fast path. `--selection random --seed N` records a
+repeatable alternative. This new 64-sample CLI route has not run on the kit.
+Host-only payload regeneration matched both historical batch inputs byte for
+byte (`evidence/2026-10-13-release-readiness/payload-regeneration.md`).
 
 Use one run directory for manual stages:
 
@@ -30,6 +36,7 @@ Use one run directory for manual stages:
 "$KIT_ROOT/.venv/bin/python" -m pfkit eval signal-freq --run-dir "$KIT_ROOT/reports/manual-signal"
 "$KIT_ROOT/.venv/bin/python" -m pfkit export signal-freq --run-dir "$KIT_ROOT/reports/manual-signal"
 "$KIT_ROOT/.venv/bin/python" -m pfkit inspect "$KIT_ROOT/reports/manual-signal/model.tflite" --run-dir "$KIT_ROOT/reports/manual-signal"
+"$KIT_ROOT/.venv/bin/python" -m pfkit prepare-input signal-freq --run-dir "$KIT_ROOT/reports/manual-signal" --samples 64
 "$KIT_ROOT/.venv/bin/python" -m pfkit report --run-dir "$KIT_ROOT/reports/manual-signal"
 ```
 
@@ -44,6 +51,8 @@ Per-channel quantization is informational; the C6 tools-host probe compiled and 
 It reads `docs/OPS.md` from the SDK checkout named in `deps.lock` at run time. The kit does not contain a copy.
 Use `--sdk-root /absolute/path/to/VectorBlox-SDK` on `inspect` or `example run`, or set `PFKIT_SDK_ROOT`.
 If the table is absent, `inspect` reports its path and asks you to run `pfkit deps fetch`.
+An inspect pass means no known incompatibility was found. It does not prove
+the compiler accepts the model or that the kit output is correct.
 `report` writes package versions, revisions, hashes and `summary.md`.
 
 The remote stages use local config files. Set their SSH targets and paths before execution.
@@ -74,6 +83,11 @@ Set a longer compile timeout only when needed. The runner's `--timeout-ms` is a 
 Each remote command uses the stage timeout, including transfers. A timeout is recorded in the stage manifest
 when `--run-dir` is set. Remote paths with spaces are quoted in SSH scripts and SCP targets.
 `compare` checks float and TFLite outputs. It checks simulator and hardware outputs when supplied.
+Each stage records an `attempt_id` from `attempt.json`. Compare rejects stale
+model or payload artifacts. `status: passed` means the requested checks
+passed; `complete: true` also requires all three checks. `stale`, `failed`,
+`incomplete`, and `no_evidence` are not passes. Read each row's `exact` flag
+beside its tolerance result. A full `example run` requests all three checks.
 
 The kit runner CLI contract is `vbx_run --model m.vnnx --input in.bin --output out.bin --timeout-ms N --json meta.json`.
 Its exit codes are 0 for success, 2 for bad arguments or size, 3 for model load or DMA failure, 4 for timeout, and 5 for an NPU error register.

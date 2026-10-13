@@ -27,6 +27,14 @@ These observer values are comparison evidence; the converter does not reuse them
 TFLite against simulator uses a maximum raw INT8 LSB tolerance. Simulator against hardware requires exact raw equality by default.
 `--lsb-tolerance` can relax the hardware comparison. A stage without supplied evidence says `not run`.
 A failed tolerance returns a nonzero exit code.
+Each comparison row has `status`, `pass`, and `exact` when it ran. `pass`
+means its requested tolerance passed; `exact` means the measured difference
+was zero. The top-level `status` is `no_evidence`, `incomplete`, `failed`,
+`stale`, or `passed`. Its `pass` is true only when `status` is `passed`.
+`complete` is true only when all three checks ran. A requested-check pass
+without `complete` is not full deployment validation. `stale` and `failed`
+are never passes. `attempt.json` identifies the active run, so old output
+from another attempt cannot support a new pass.
 
 ## Quantized payload
 

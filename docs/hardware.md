@@ -110,9 +110,26 @@ make -C hw test
 ```
 
 The test target builds with `VBX_RUN_FAKE_DRIVER=1`. It covers completion, repeated multi-sample output, a stuck poll, a blocked start, error register, init failure, V500 refusal, and invalid input size. The real build does not link fake symbols.
+Forced stuck-call timeout tests ran against `hw/tests/fake_vbx_cnn_api.c`,
+not the NPU. A real kit timeout has not been forced.
 
 ## Evidence boundary
 
 The case study ran a `2.0.1` V250 image on silicon and recorded `ERR=0`, version word `0x20000000`, and completed inference. Source: `deps/tychon-quantum-sensing/workers/polarfire-hybrid-control/firmware/linux/README.md:202-205`. Its loaded model's start plus poll had median `32 µs` and p99 `33 µs`. Source: `deps/tychon-quantum-sensing/docs/model-to-v250.md:233-238`.
+
+The kit's ODMR records are separate measurements on the earlier case-study
+image. The one-sample run used runner commit `af9f4d5` and recorded 0.032 ms
+median and 0.032 ms maximum (`evidence/2026-10-12-hardware/odmr-mlp/hw.json`).
+The 64-sample batch used hardened runner commit `5fe1239` and recorded
+0.034 ms median and 0.072 ms maximum
+(`evidence/2026-10-12-hardware/batch64/odmr-mlp/hw.json`). A separate
+200-repeat one-sample record with that runner had 0.034 ms median and
+0.060001 ms maximum
+(`evidence/2026-10-12-hardware/batch64/odmr-mlp/timing-200.json`).
+`wall_ms` is measured in `hw/vbx_run.c` from just before the NPU ready check
+and `vbx_cnn_model_start` until `vbx_cnn_model_poll` returns 0. It excludes
+the input copy into the DMA buffer, the output write, process start and any
+sensor or actuator path. It is a sample of a quiet board, not a worst-case
+bound. The new 64-sample CLI route has not run on the kit.
 
 On 2026-10-12 the kit's build script ran in Libero SoC 2025.2 on the tools host: exit 0 in 40 min 25 s, timing met (0 violations, worst slack 1.049 ns), job exported (sha256 6d5cae6c...), generated CoreVectorBlox 2.0.1 PRESET 0 (`evidence/2026-10-12-libero-build/`). The exported image has not been programmed onto a kit, and the kit's overlay has not been applied to it; both remain unverified on hardware.

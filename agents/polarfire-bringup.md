@@ -51,6 +51,10 @@ RUN_DIR="$KIT_ROOT/reports/signal-inspect"
 
 Choose `--until data`, `train`, `eval`, `export`, or `inspect` for local work.
 Choose `--until compile`, `sim`, `infer`, or `compare` for remote work.
+For a 64-sample run, add `--samples 64`; the default is a labeled one-sample
+fast path. The CLI prepares one input selection before simulation, then uses
+it for inference and comparison. The new 64-sample CLI route has not run on
+the kit. Use a fresh run directory and read its `attempt.json`.
 A second `example run` starts again at data.
 Use a new run directory when changing the final stage or `--full` mode.
 Use individual pfkit commands only when their input files are already prepared.
@@ -71,6 +75,7 @@ Stop at a failed gate and keep its output.
 | eval | `RUN_DIR/eval.json` | Test error and units recorded. |
 | export | `RUN_DIR/export.manifest.json` | INT8 model and calibration recorded. |
 | inspect | `RUN_DIR/inspect.json` | Unsupported and limit lists empty. |
+| prepare-input | `RUN_DIR/input.manifest.json` | Sample indices, layout and payload hash recorded before sim. |
 | compile | `RUN_DIR/compile.json` | Remote command passed and VNNX recorded. |
 | sim | `RUN_DIR/sim.json` | Simulator output recorded. |
 | infer | `RUN_DIR/infer.json` and `RUN_DIR/hw.json` | Kit output and runner metadata recorded. |

@@ -2,7 +2,19 @@
 
 This document defines what the PolarFire Agent Skills kit supports. It also names what the kit does not support.
 The kit takes a small model to a Microchip PolarFire SoC Icicle Kit (MPFS250T) with the CoreVectorBlox V250 soft NPU.
-Every claim here comes from a run or a vendor statement dated 2026-10-12. Untested items carry the word "untested".
+Validation claims cite recorded runs. Untested items carry the word "untested".
+
+Prior art includes FINN's end-to-end flow and verification work, and the
+hls4ml Libero backend. This kit is a PolarFire-specific integration of the
+VectorBlox flow with evidence handling. The hls4ml PR below was an open draft
+as of 2026-10-13; nothing from it was accepted upstream at that review. Its
+current state was not checked in this offline documentation pass.
+
+```text
+https://finn-dev.readthedocs.io/en/latest/end_to_end_flow.html
+https://finn.readthedocs.io/en/latest/verification.html
+https://github.com/fastmachinelearning/hls4ml/pull/1578
+```
 
 ## 1. Supported target
 
@@ -16,6 +28,8 @@ The supported target is one board and one NPU size.
 - DMA buffer: the kit uses the device `/dev/udmabuf-ddr-nc0`.
 
 Model deployment is the core path. The path runs from a trained model to an INT8 TFLite file, then to a compiled `.vnnx` file, then to inference on the kit.
+Model support is bounded to the `mlp` and `conv2d_1k` adapters in
+`docs/adapters.md`. The `conv2d_1k` route has simulator evidence only.
 
 PID and watchdog integration is a separate, optional example. Inference does not need it.
 A user can skip that example and still complete the core path.

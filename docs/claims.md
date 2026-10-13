@@ -3,6 +3,10 @@
 These findings use the pinned source snapshots under `deps/`.
 Local commands run in the kit's Python 3.11 environment.
 The C2, C6, and C8 compiler and simulator results below came from the tools host.
+These probes bound the `mlp` and `conv2d_1k` adapters in `docs/adapters.md`.
+The `conv2d_1k` route has simulator evidence only. An inspect pass finds no
+known incompatibility; it does not establish compiler acceptance or correct
+kit output. Keep probe results separate from later run attempts.
 
 ## C1 — Guard input shape
 

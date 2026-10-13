@@ -31,6 +31,8 @@ Follow `adapt-your-model` to export and inspect the model.
 The inspect result lists operators and tensors.
 The command fails when it finds unsupported operators or limits.
 Save `inspect.json` beside the exported TFLite file.
+An inspect pass means no known incompatibility was found. It does not
+establish that the compiler accepts the model or that kit output is correct.
 Use the SDK checkout option when its operator table is available.
 Compare model identity and hash before using an older report.
 
