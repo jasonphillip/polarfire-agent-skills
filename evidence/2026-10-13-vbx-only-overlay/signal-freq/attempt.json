@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "example",
+    "run",
+    "signal-freq",
+    "--until",
+    "compare",
+    "--samples",
+    "64",
+    "--toolshost",
+    "<config>/toolshost.yaml",
+    "--kit",
+    "<config>/kit.yaml",
+    "--run-dir",
+    "reports/20261013-133043-signal-freq-vbxonly"
+  ],
+  "attempt_id": "20261013-173043-3a074592",
+  "dirty": false,
+  "kit_revision": "53c8a56a33f35ef6b3c3e9bce408c971413f3957",
+  "started_utc": "2026-10-13T17:30:43.281075+00:00",
+  "worktree": false
+}

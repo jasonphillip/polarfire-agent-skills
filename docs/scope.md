@@ -29,7 +29,12 @@ The supported target is one board and one NPU size.
 
 Model deployment is the core path. The path runs from a trained model to an INT8 TFLite file, then to a compiled `.vnnx` file, then to inference on the kit.
 Model support is bounded to the `mlp` and `conv2d_1k` adapters in
-`docs/adapters.md`. The `conv2d_1k` route has simulator evidence only.
+`docs/adapters.md`.
+
+| Adapter | Examples | Status |
+|---|---|---|
+| `mlp` | `signal-freq`, `odmr-mlp` | Both passed the kit comparison on 2026-10-12. See `evidence/2026-10-12-hardware/batch64/README.md`. |
+| `conv2d_1k` | `odmr-fcnn` | On 2026-10-13, the first convolution-route model completed on both the case-study and kit-built V250 images. Hardware parity: kit = simulator = INT8 TFLite, 0 LSB, on both images. Conversion accuracy: the largest per-sample float-to-INT8 prediction difference was 29.8 µT against the 5.0 µT tolerance. One of 64 samples exceeded it; the mean difference was 2.39 µT. This is not an error against ground truth. Overall result: failed. The tolerance was not raised, and the cause was not investigated. See `evidence/2026-10-13-odmr-fcnn/README.md` and `evidence/2026-10-13-kit-built-image/README.md`. |
 
 PID and watchdog integration is a separate, optional example. Inference does not need it.
 A user can skip that example and still complete the core path.
@@ -37,7 +42,7 @@ A user can skip that example and still complete the core path.
 ## 2. Tested profile and compatible range
 
 The tools-host validation used VectorBlox SDK `release-v2.0.3` and targeted CoreVectorBlox IP 2.0.1.
-The kit ran inference on one Icicle Kit on 2026-10-12 with the case study's image and overlay (see `docs/validation.md`); a bitstream from the kit's own build script is a separate item.
+The kit ran inference on one Icicle Kit with the case study's image on 2026-10-12 and the kit-built image on 2026-10-13. The kit-built image used the case study's seed7 overlay; see `evidence/2026-10-13-kit-built-image/README.md` and `docs/hardware.md`.
 
 Microchip states that any 2.0.x core works with any 2.0.x SDK (VectorBlox SDK issue #27).
 The kit treats 2.0.x as the vendor-stated compatible range.

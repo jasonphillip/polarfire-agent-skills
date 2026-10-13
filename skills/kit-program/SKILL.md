@@ -12,9 +12,12 @@ metadata:
 Read `docs/hardware.md` before changing the kit.
 The model inference path needs a V250-enabled image.
 The current kit build script creates a job but does not program the device.
-The 2026-10-12 kit build met timing and exported a job, but that image has
-not been programmed or tested on the kit. Earlier hardware evidence uses
-the case-study image (`evidence/2026-10-12-libero-build/`).
+The 2026-10-12 kit build met timing and exported a job. On 2026-10-13, that
+image was programmed and tested on the kit. Both 64-sample examples passed
+with outputs byte-identical to the case-study-image runs. The rollback is
+the case-study seed7 V250 job (sha256
+`39c8bcf2665ce8b79bcc2abb552ddd2b7b703729d50876744c2cb63c82ca230b`).
+See `evidence/2026-10-13-kit-built-image/README.md`.
 Programming changes persistent hardware state.
 Get operator approval for the exact image and target before programming.
 

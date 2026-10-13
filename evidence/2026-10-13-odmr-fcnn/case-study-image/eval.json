@@ -1,0 +1,12 @@
+{
+  "attempt_id": "20261013-160419-408a6ea5",
+  "inputs": {
+    "model_sha256": "cc4f23f271cded3ece8c9d632967d4011826041d1537b3462e8ac79d425dcd32",
+    "payload_sha256": null
+  },
+  "mae": 13.499533653259277,
+  "rmse": 16.373205184936523,
+  "samples": 100,
+  "status": "completed",
+  "units": "microtesla"
+}

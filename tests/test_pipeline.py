@@ -291,8 +291,61 @@ def test_sim_runner_flat_and_nhwc_input(tmp_path, monkeypatch):
         runner.main()
 
 
+def test_sim_runner_batch_one_model_shape(tmp_path, monkeypatch):
+    import importlib.util
+    import sys
+    import types
+
+    seen = []
+
+    class FakeModel:
+        num_inputs = num_outputs = 1
+        input_shape = [(1, 1, 1, 100)]
+        input_dtypes = [np.dtype("int8")]
+        input_scale_factor = output_scale_factor = [1.0]
+        input_zeropoint = output_zeropoint = [0]
+
+        def __init__(self, blob):
+            pass
+
+        def run(self, values):
+            sample, = values
+            assert sample.size == np.prod(self.input_shape[0])
+            seen.append(sample.reshape(self.input_shape[0]).copy())
+            return [sample[:1]]
+
+    package = types.ModuleType("vbx")
+    sim = types.ModuleType("vbx.sim")
+    sim.Model = FakeModel
+    package.sim = sim
+    monkeypatch.setitem(sys.modules, "vbx", package)
+    monkeypatch.setitem(sys.modules, "vbx.sim", sim)
+    path = Path(__file__).resolve().parents[1] / "pfkit" / "remote" / "vbx_sim_run.py"
+    spec = importlib.util.spec_from_file_location("test_vbx_sim_run_batch_one", path)
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    model_path = tmp_path / "model.vnnx"
+    model_path.write_bytes(b"model")
+    input_path = tmp_path / "input.int8.npy"
+    samples = np.arange(64 * 100, dtype=np.int8).reshape(64, 1, 1, 100)
+    np.save(input_path, samples)
+    output_path = tmp_path / "output.npz"
+    monkeypatch.setattr(sys, "argv", ["vbx_sim_run", "--model", str(model_path),
+                                  "--input", str(input_path), "--output", str(output_path)])
+    runner.main()
+    assert len(seen) == len(samples)
+    for actual, expected in zip(seen, samples):
+        assert actual.shape == FakeModel.input_shape[0]
+        np.testing.assert_array_equal(actual, expected.reshape(FakeModel.input_shape[0]))
+    with np.load(output_path) as result:
+        assert result["outputs"].shape[0] == len(samples)
+    np.save(input_path, np.zeros((64, 1, 1, 99), dtype=np.int8))
+    with pytest.raises(ValueError, match="model layout"):
+        runner.main()
+
+
 @pytest.mark.ml
-@pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp"])
+@pytest.mark.parametrize("name", ["signal-freq", "odmr-mlp", "odmr-fcnn"])
 def test_examples_through_inspect(name, tmp_path):
     import tensorflow as tf
     from pfkit.pipeline import data, train, evaluate, export
@@ -319,7 +372,11 @@ def test_examples_through_inspect(name, tmp_path):
     assert interpreter.get_input_details()[0]["dtype"] == np.int8
     assert interpreter.get_output_details()[0]["dtype"] == np.int8
     assert len(manifest["sha256"]) == 64
-    assert manifest["export_form"] == "conv1x1"
+    if cfg["adapter"] == "mlp":
+        assert manifest["export_form"] == "conv1x1"
+    else:
+        assert manifest["adapter"] == "conv2d_1k"
+    assert not result["blocking_flags"]
     assert set(op["operator"] for op in result["operators"]) <= {"CONV_2D", "RESHAPE"}
 
 

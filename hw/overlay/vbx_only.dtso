@@ -11,7 +11,8 @@
  *   cat vbx_only.dtbo > /sys/kernel/config/device-tree/overlays/vbx_only/dtbo
  *   # Check /sys/class/uio/uioN/name for "vbx".
  *
- * This overlay has not been applied with this kit's new bitstream.
+ * Since 2026-10-13, this is the kit's boot overlay on the kit-built image.
+ * Evidence: evidence/2026-10-13-vbx-only-overlay/.
  * Never map the PID/watchdog window at 0x60040000 or the DMA controller
  * page at 0x60001000 through this runner's overlay.
  */

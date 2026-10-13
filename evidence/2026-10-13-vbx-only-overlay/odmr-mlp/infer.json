@@ -1,0 +1,109 @@
+{
+  "attempt_id": "20261013-173106-4a1c11ee",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "mkdir -p /tmp/pfkit/20261013-173106-4a1c11ee"
+      ],
+      "command": "ssh root@<kit> 'mkdir -p /tmp/pfkit/20261013-173106-4a1c11ee'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:22.558345+00:00",
+      "started_utc": "2026-10-13T17:31:21.798590+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<kit-root>/hw/vbx_run",
+        "reports/20261013-133106-odmr-mlp-vbxonly/model.vnnx",
+        "reports/20261013-133106-odmr-mlp-vbxonly/input.int8.bin",
+        "root@<kit>:/tmp/pfkit/20261013-173106-4a1c11ee/"
+      ],
+      "command": "scp <kit-root>/hw/vbx_run reports/20261013-133106-odmr-mlp-vbxonly/model.vnnx reports/20261013-133106-odmr-mlp-vbxonly/input.int8.bin root@<kit>:/tmp/pfkit/20261013-173106-4a1c11ee/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:23.369096+00:00",
+      "started_utc": "2026-10-13T17:31:22.558628+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "/tmp/pfkit/20261013-173106-4a1c11ee/vbx_run --model /tmp/pfkit/20261013-173106-4a1c11ee/model.vnnx --input /tmp/pfkit/20261013-173106-4a1c11ee/input.int8.bin --output /tmp/pfkit/20261013-173106-4a1c11ee/hw.bin --timeout-ms 5000 --json /tmp/pfkit/20261013-173106-4a1c11ee/hw.json"
+      ],
+      "command": "ssh root@<kit> '/tmp/pfkit/20261013-173106-4a1c11ee/vbx_run --model /tmp/pfkit/20261013-173106-4a1c11ee/model.vnnx --input /tmp/pfkit/20261013-173106-4a1c11ee/input.int8.bin --output /tmp/pfkit/20261013-173106-4a1c11ee/hw.bin --timeout-ms 5000 --json /tmp/pfkit/20261013-173106-4a1c11ee/hw.json'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:24.922293+00:00",
+      "started_utc": "2026-10-13T17:31:23.369486+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/20261013-173106-4a1c11ee/hw.bin",
+        "reports/20261013-133106-odmr-mlp-vbxonly/hw.bin"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/20261013-173106-4a1c11ee/hw.bin reports/20261013-133106-odmr-mlp-vbxonly/hw.bin",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:25.728530+00:00",
+      "started_utc": "2026-10-13T17:31:24.922611+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/20261013-173106-4a1c11ee/hw.json",
+        "reports/20261013-133106-odmr-mlp-vbxonly/hw.json"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/20261013-173106-4a1c11ee/hw.json reports/20261013-133106-odmr-mlp-vbxonly/hw.json",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-13T17:31:26.547462+00:00",
+      "started_utc": "2026-10-13T17:31:25.728824+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/kit.yaml",
+    "values": {
+      "remote_dir": "/tmp/pfkit",
+      "ssh_target": "root@<kit>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      }
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "fbb97aeaa2eb14322115cd26aae41192fbbcdf95f35f644e1ddc509e73ecfafc",
+    "payload_sha256": "85f113c7d5d3145634538586f2bf9a1db06eeff7d55b34ced457b4ba82f1b23a",
+    "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "reports/20261013-133106-odmr-mlp-vbxonly/hw.bin",
+    "sha256": "88261c057812c6196ea9bb3b652a79b38ebf231fe69f0e0956d1a8a076cac367",
+    "size_bytes": 64
+  },
+  "payload_sha256": "85f113c7d5d3145634538586f2bf9a1db06eeff7d55b34ced457b4ba82f1b23a",
+  "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771",
+  "status": "completed"
+}

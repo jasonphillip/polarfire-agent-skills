@@ -74,14 +74,15 @@ need to run before you can claim the model works on hardware.
 See [the step-by-step guide](docs/getting-started.md) and
 [troubleshooting](docs/faq.md) for more help.
 
-## Two worked examples
+## Examples
 
 | Example | Task | Start with it when… |
 |---|---|---|
 | `signal-freq` | Estimate the frequency of a generated signal. | You want the simplest first run. |
 | `odmr-mlp` | Estimate a magnetic field from simulated quantum-sensing data. | You want to follow the original sensing case study. |
+| `odmr-fcnn` | Run the case study's ODMR FCNN on the `odmr-mlp` data. | Hardware parity: kit = simulator = INT8 TFLite, 0 LSB, on both images. Conversion accuracy: the largest per-sample float-to-INT8 prediction difference was 29.8 µT against 5.0 µT; one of 64 samples exceeded it, and the mean difference was 2.39 µT. This is not an error against ground truth. Overall result: failed. See `evidence/2026-10-13-kit-built-image/README.md`. |
 
-Both use generated data. The ODMR example also needs Tk when using
+All use generated data. The ODMR examples also need Tk when using
 Homebrew Python 3.11 on macOS; see [installation requirements](docs/install.md).
 
 ## Use an AI coding assistant
@@ -142,14 +143,16 @@ These are recorded results for the supported setup, as of **2026-10-13**.
 | Check | Recorded result |
 |---|---|
 | Local setup and inspection | Passed on Linux aarch64 and Apple silicon macOS. |
-| Both examples on the board | Each completed 64 test inputs. Integer outputs matched the simulator exactly, reported as **0 LSB difference**. |
+| `signal-freq` and `odmr-mlp` on the board | Each completed 64 test inputs. Integer outputs matched the simulator exactly, reported as **0 LSB difference**. |
+| `odmr-fcnn` on the board | On 2026-10-13, all 64 inputs completed on both images with NPU error 0. Hardware parity: kit = simulator = INT8 TFLite, 0 LSB. Conversion accuracy: the largest per-sample float-to-INT8 prediction difference was 29.8 µT against a 5.0 µT tolerance. One of 64 samples exceeded it; the mean difference was 2.39 µT. This is not an error against ground truth. Overall result: failed. See `evidence/2026-10-13-kit-built-image/README.md`. |
 | Assistant-guided board run | Claude Code completed one full `signal-freq` run. |
-| Toolkit's FPGA build | Built and met timing. This new image has not been programmed or tested on the board. |
+| Toolkit's FPGA build | Built and met timing. On 2026-10-13, the kit-built image was programmed and tested on the kit. Both 64-sample examples passed; their outputs were byte-identical to the case-study-image runs. See `evidence/2026-10-13-kit-built-image/README.md`. |
 
-The board results use the earlier case-study image. They do not validate the
-new image. Model support is bounded: the `mlp` adapter has the worked board
-examples; `conv2d_1k` has simulator evidence only. Other boards, accelerator
-sizes, and SDK 3.x are outside the validated path.
+Board results now cover the case-study and kit-built images. Model support is
+bounded: the `mlp` adapter has the passing board examples. The `conv2d_1k`
+model had exact hardware parity on both images. Its float-to-INT8 conversion
+missed tolerance, so it failed (`evidence/2026-10-13-kit-built-image/README.md`). Other
+boards, accelerator sizes, and SDK 3.x are outside the validated path.
 
 See the [validation record](docs/validation.md),
 [64-input board results](evidence/2026-10-13-hardware-cli-route/README.md),

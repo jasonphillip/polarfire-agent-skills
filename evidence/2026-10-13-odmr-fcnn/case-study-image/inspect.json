@@ -1,0 +1,713 @@
+{
+  "attempt_id": "20261013-160419-408a6ea5",
+  "blocking_flags": [],
+  "flags": [
+    "per-channel quantization tensor 4",
+    "per-channel quantization tensor 5",
+    "per-channel quantization tensor 6",
+    "per-channel quantization tensor 7",
+    "per-channel quantization tensor 8",
+    "per-channel quantization tensor 9"
+  ],
+  "inputs": {
+    "model_sha256": "c02cbc0fc826a5f67a6f092b176fb6d56dca01bd3a8abcea7f2c00665f3c7b8f",
+    "payload_sha256": null
+  },
+  "limit_violations": [],
+  "operators": [
+    {
+      "index": 0,
+      "inputs": [
+        0,
+        9,
+        8
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 1,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 2
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        10
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 1,
+      "inputs": [
+        10,
+        7,
+        6
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 1,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 2
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        11
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 2,
+      "inputs": [
+        11,
+        5,
+        4
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 1,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 2
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        12
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 3,
+      "inputs": [
+        12,
+        3,
+        2
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 0,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 1
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        13
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 4,
+      "inputs": [
+        13,
+        1
+      ],
+      "operator": "RESHAPE",
+      "options": {},
+      "options_type": "NONE",
+      "outputs": [
+        14
+      ],
+      "sdk_limits": {},
+      "subgraph": 0,
+      "supported": true
+    }
+  ],
+  "status": "completed",
+  "tensors": [
+    {
+      "buffer": 1,
+      "dtype": "INT8",
+      "index": 0,
+      "name": "serving_default_input_1:0",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.003921568859368563
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        100,
+        1
+      ],
+      "shape_signature": [
+        1,
+        1,
+        100,
+        1
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 2,
+      "dtype": "INT32",
+      "index": 1,
+      "name": "model/flatten/Const",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [],
+        "zero_points": []
+      },
+      "shape": [
+        2
+      ],
+      "shape_signature": [
+        2
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 3,
+      "dtype": "INT32",
+      "index": 2,
+      "name": "model/conv2d_3/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.00012080006854375824
+        ],
+        "zero_points": [
+          0
+        ]
+      },
+      "shape": [
+        1
+      ],
+      "shape_signature": [
+        1
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 4,
+      "dtype": "INT8",
+      "index": 3,
+      "name": "model/conv2d_3/Conv2D",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.011553125455975533
+        ],
+        "zero_points": [
+          0
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "shape_signature": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 5,
+      "dtype": "INT32",
+      "index": 4,
+      "name": "model/conv2d_2/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          2.0378347471705638e-05,
+          3.779611142817885e-05,
+          2.1846959498361684e-05,
+          3.6086370528209955e-05,
+          2.098677032336127e-05,
+          2.4645039957249537e-05,
+          6.414092058548704e-05,
+          2.2334006644086912e-05,
+          3.132019264739938e-05,
+          4.181596887065098e-05,
+          9.482986206421629e-05,
+          2.120632962032687e-05,
+          2.2583966710953973e-05,
+          5.152716039447114e-05,
+          2.278860119986348e-05,
+          6.382067658705637e-05,
+          4.3546242523007095e-05,
+          5.1601418817881495e-05,
+          3.591513814171776e-05,
+          7.067589467624202e-05,
+          2.2583129975828342e-05,
+          2.7719546778826043e-05,
+          3.359399124747142e-05,
+          3.5211516660638154e-05
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        24
+      ],
+      "shape_signature": [
+        24
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 6,
+      "dtype": "INT8",
+      "index": 5,
+      "name": "model/conv2d_2/Conv2D",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.0031471054535359144,
+          0.005836997181177139,
+          0.0033739088103175163,
+          0.005572955124080181,
+          0.00324106658808887,
+          0.003806027118116617,
+          0.009905526414513588,
+          0.00344912544824183,
+          0.004836896434426308,
+          0.006457798648625612,
+          0.014644935727119446,
+          0.0032749739475548267,
+          0.003487727604806423,
+          0.007957534864544868,
+          0.0035193301737308502,
+          0.009856069460511208,
+          0.006725011393427849,
+          0.007969003170728683,
+          0.005546511150896549,
+          0.010914746671915054,
+          0.003487598616629839,
+          0.004280834924429655,
+          0.005188047885894775,
+          0.005437848158180714
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        24,
+        1,
+        5,
+        16
+      ],
+      "shape_signature": [
+        24,
+        1,
+        5,
+        16
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 7,
+      "dtype": "INT32",
+      "index": 6,
+      "name": "model/conv2d_1/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          1.5367351807071827e-05,
+          1.7253420082852244e-05,
+          2.728401159401983e-05,
+          2.166845661122352e-05,
+          1.74744454852771e-05,
+          1.5051822629175149e-05,
+          1.7868171198642813e-05,
+          2.0326853700680658e-05,
+          1.99113019334618e-05,
+          1.991849421756342e-05,
+          3.0487221010844223e-05,
+          3.0387742299353704e-05,
+          3.8939873775234446e-05,
+          1.9664741557789966e-05,
+          2.199882328568492e-05,
+          1.5818550309631974e-05
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        16
+      ],
+      "shape_signature": [
+        16
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 8,
+      "dtype": "INT8",
+      "index": 7,
+      "name": "model/conv2d_1/Conv2D",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.0037635881453752518,
+          0.004225501790642738,
+          0.006682074163109064,
+          0.005306779406964779,
+          0.0042796325869858265,
+          0.003686312586069107,
+          0.004376058932393789,
+          0.0049782101996243,
+          0.004876438062638044,
+          0.0048781996592879295,
+          0.0074665662832558155,
+          0.007442202884703875,
+          0.009536689147353172,
+          0.004816053435206413,
+          0.005387688986957073,
+          0.0038740902673453093
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        16,
+        1,
+        5,
+        8
+      ],
+      "shape_signature": [
+        16,
+        1,
+        5,
+        8
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 9,
+      "dtype": "INT32",
+      "index": 8,
+      "name": "model/conv2d/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          2.9428867492242716e-05,
+          2.5723431463120505e-05,
+          2.6881310986937024e-05,
+          6.272965401876718e-05,
+          4.013072248199023e-05,
+          2.461734584358055e-05,
+          1.980168599402532e-05,
+          1.7601585568627343e-05
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        8
+      ],
+      "shape_signature": [
+        8
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 10,
+      "dtype": "INT8",
+      "index": 9,
+      "name": "model/conv2d/Conv2D",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.0075043607503175735,
+          0.0065594748593866825,
+          0.006854733917862177,
+          0.015996061265468597,
+          0.010233333334326744,
+          0.00627742288634181,
+          0.005049429833889008,
+          0.004488403908908367
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        8,
+        1,
+        5,
+        1
+      ],
+      "shape_signature": [
+        8,
+        1,
+        5,
+        1
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 11,
+      "dtype": "INT8",
+      "index": 10,
+      "name": "model/re_lu/Relu;model/conv2d/BiasAdd;model/conv2d/Conv2D;model/conv2d/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.004083164967596531
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        48,
+        8
+      ],
+      "shape_signature": [
+        1,
+        1,
+        48,
+        8
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 12,
+      "dtype": "INT8",
+      "index": 11,
+      "name": "model/re_lu_1/Relu;model/conv2d_1/BiasAdd;model/conv2d_1/Conv2D;model/conv2d_1/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.0064752665348351
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        22,
+        16
+      ],
+      "shape_signature": [
+        1,
+        1,
+        22,
+        16
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 13,
+      "dtype": "INT8",
+      "index": 12,
+      "name": "model/re_lu_2/Relu;model/conv2d_2/BiasAdd;model/conv2d_2/Conv2D;model/conv2d_2/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.010456050746142864
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "shape_signature": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 14,
+      "dtype": "INT8",
+      "index": 13,
+      "name": "model/conv2d_3/BiasAdd;model/conv2d_3/Conv2D;model/conv2d_3/BiasAdd/ReadVariableOp",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.005369213875383139
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shape_signature": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 15,
+      "dtype": "INT8",
+      "index": 14,
+      "name": "StatefulPartitionedCall:0",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.005369213875383139
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1
+      ],
+      "shape_signature": [
+        1,
+        1
+      ],
+      "subgraph": 0
+    }
+  ],
+  "unsupported": []
+}

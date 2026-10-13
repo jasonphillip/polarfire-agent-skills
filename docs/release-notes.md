@@ -1,5 +1,11 @@
 # v0.1.0 (initial, scoped)
 
+2026-10-13: The kit-built image now boots `vbx_only` instead of seed7; both 64-sample examples passed with byte-identical outputs (`evidence/2026-10-13-vbx-only-overlay/README.md`).
+
+## 2026-10-13: kit-built image validated
+
+FlashPro Express programmed the kit-built CoreVectorBlox 2.0.1 V250 job using PROGRAM only. The kit reset and returned. `signal-freq` and `odmr-mlp` each passed 64 samples with outputs byte-identical to their case-study-image runs. Batch replay matched those outputs byte for byte. `odmr-fcnn` kept exact hardware parity on both images but failed its float-to-INT8 conversion tolerance. See `evidence/2026-10-13-kit-built-image/README.md`.
+
 ## What it is
 
 This kit gives coding agents a staged path from two example models to INT8
@@ -33,7 +39,7 @@ Codex client checks reached inspect (`docs/validation.md`).
 
 ## Known limits
 
-The kit's own Libero build ran on 2026-10-12 on the tools host: timing met, programming job exported, kit not programmed with it (docs/validation.md, evidence/2026-10-12-libero-build/).
+The kit's own Libero build ran on 2026-10-12 on the tools host: timing met and programming job exported (`evidence/2026-10-12-libero-build/`). That job was programmed and tested on 2026-10-13 (`evidence/2026-10-13-kit-built-image/README.md`).
 The `prepare-input --samples 64` route regenerated both historical batch
 payloads byte for byte on the host
 (`evidence/2026-10-13-release-readiness/payload-regeneration.md`).

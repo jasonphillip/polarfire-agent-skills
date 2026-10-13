@@ -1,0 +1,10 @@
+{
+ "image": "kit-built",
+ "job": "Vectorblox_FD0AEBB95776A726D3D.job",
+ "job_sha256": "6d5cae6c30053ed5d16325f9cc03e57eb706e6ab3f3f9306d741cad02d711c6c",
+ "programmed_utc": "2026-10-13T16:18:06+00:00",
+ "fabric_digest": "C4307EA9E823359B5C5F551DEEEB11F6072ECF51ED2B4893FCD05F6711B1FB94",
+ "core": "CoreVectorBlox 2.0.1 V250",
+ "previous_image": "case-study seed7 V250",
+ "rollback_job_sha256": "39c8bcf2665ce8b79bcc2abb552ddd2b7b703729d50876744c2cb63c82ca230b"
+}

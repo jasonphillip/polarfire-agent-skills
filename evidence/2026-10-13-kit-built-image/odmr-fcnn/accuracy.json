@@ -1,0 +1,25 @@
+{
+ "example": "odmr-fcnn",
+ "samples": 64,
+ "split": "test",
+ "units": "microtesla",
+ "hardware_parity": {
+  "kit_vs_int8_tflite_raw_equal": true,
+  "max_abs_lsb": 0
+ },
+ "conversion_float_vs_int8": {
+  "max": 29.806,
+  "mean": 2.387,
+  "median": 2.007,
+  "p90": 3.061,
+  "over_tolerance": 1,
+  "tolerance": 5.0,
+  "output_lsb_uT": 0.268
+ },
+ "ground_truth_error": {
+  "float_mae": 14.012,
+  "int8_mae": 13.917,
+  "float_max": 39.167,
+  "int8_max": 37.916
+ }
+}
