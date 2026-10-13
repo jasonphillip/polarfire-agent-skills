@@ -1,6 +1,7 @@
 """Command line entry points for reproducible pipeline stages."""
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import secrets
 import sys
@@ -62,6 +63,8 @@ def parser():
     infer.add_argument("--timeout-ms", type=int, default=5000)
     infer.add_argument("--run-dir")
     infer.add_argument("--dry-run", action="store_true")
+    infer.add_argument("--overwrite-payload", action="store_true",
+                       help="replace an adjacent .bin when it differs from the .npy input")
     compare = sub.add_parser("compare")
     compare.add_argument("example")
     compare.add_argument("--run-dir", required=True)
@@ -128,13 +131,41 @@ def _stamp_local_stage(run_dir, stage, attempt_id=None):
     write_json(path, record)
 
 
+def _payload_for_infer(input_file, dry_run=False, overwrite=False):
+    """Return a binary payload path, writing it only for an executing .npy input."""
+    import numpy as np
+
+    source = Path(input_file)
+    if source.suffix != ".npy":
+        return source
+    samples = np.load(source, allow_pickle=False)
+    if samples.dtype != np.int8 or samples.ndim < 2 or samples.shape[0] < 1:
+        raise ValueError("inference input .npy must contain K >= 1 int8 samples")
+    data = np.ascontiguousarray(samples).tobytes()
+    binary = source.with_suffix(".bin")
+    if dry_run:
+        print(f"would write {binary} ({samples.shape[0]} samples, {len(data)} bytes, "
+              f"sha256 {hashlib.sha256(data).hexdigest()})")
+    elif binary.is_file():
+        if binary.read_bytes() != data:
+            if not overwrite:
+                raise ValueError(f"{binary} exists with different content; pass --overwrite-payload")
+            binary.write_bytes(data)
+    else:
+        binary.write_bytes(data)
+    return binary
+
+
 def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
                   input_file=None, metadata=None, runner=None, timeout_ms=5000,
-                  attempt_id=None):
+                  attempt_id=None, overwrite_payload=False):
     from . import attempt
     from .errors import RemoteCommandError
     from .pipeline import sha256, write_json
-    from .remote_ops import compile_plan, infer_plan, load_config, run_plan, sim_plan
+    from .remote_ops import _scp, compile_plan, infer_plan, load_config, run_plan, sim_plan
+
+    if stage == "infer":
+        input_file = _payload_for_infer(input_file, dry_run=dry_run, overwrite=overwrite_payload)
 
     manifest = Path(run_dir) / f"{stage}.json" if run_dir else None
     if manifest:
@@ -142,7 +173,7 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
         attempt_id = attempt_id or attempt.manual(run_dir)["attempt_id"]
     else:
         attempt_id = attempt_id or datetime.now(timezone.utc).strftime("manual-%Y%m%d-%H%M%S-") + secrets.token_hex(4)
-    cfg = load_config(config)
+    cfg = load_config(config, "kit" if stage == "infer" else "toolshost")
     result = {"status": "not run", "commands": [], "error": None,
               "attempt_id": attempt_id, "inputs": {
                   "model_sha256": sha256(model) if Path(model).is_file() else None,
@@ -193,7 +224,12 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
                                   attempt_id=attempt_id)
         if manifest:
             write_json(manifest, result)
-        result["commands"] = run_plan(commands, dry_run=dry_run, manifest=manifest)
+        if not dry_run:
+            Path(output).parent.mkdir(parents=True, exist_ok=True)
+            if stage == "infer":
+                Path(metadata).parent.mkdir(parents=True, exist_ok=True)
+        result["commands"] = run_plan(commands, dry_run=dry_run, manifest=manifest,
+                                      timeout_s=cfg["timeouts"][stage])
         if not dry_run:
             if not Path(output).is_file():
                 raise ValueError("output missing after transfer")
@@ -215,10 +251,10 @@ def _remote_stage(stage, model, output, config, run_dir=None, dry_run=False,
             result["commands"] = list(error.records)
             if stage == "infer":
                 target, directory = cfg["ssh_target"], f"{cfg['remote_dir']}/{attempt_id}"
-                transfer = ["scp", f"{target}:{directory}/{Path(metadata).name}", str(metadata)]
+                transfer = ["scp", _scp(target, f"{directory}/{Path(metadata).name}"), str(metadata)]
                 retrieval = {"attempted": True, "path": str(metadata), "exit_code": "not run"}
                 try:
-                    retrieved = run_plan([transfer])
+                    retrieved = run_plan([transfer], timeout_s=cfg["timeouts"][stage])
                     result["commands"].extend(retrieved)
                     retrieval["exit_code"] = retrieved[0]["exit_code"]
                 except RemoteCommandError as retrieval_error:
@@ -270,7 +306,8 @@ def _dispatch(args):
     if args.command in ("compile", "sim", "infer"):
         _remote_stage(args.command, args.model, args.output, args.config, args.run_dir, args.dry_run,
                       input_file=getattr(args, "input", None), metadata=getattr(args, "json", None),
-                      runner=getattr(args, "runner", None), timeout_ms=getattr(args, "timeout_ms", 5000))
+                      runner=getattr(args, "runner", None), timeout_ms=getattr(args, "timeout_ms", 5000),
+                      overwrite_payload=getattr(args, "overwrite_payload", False))
         return None
     if args.command == "compare":
         result = steps.compare(args.example, args.run_dir, args.inputs, args.sim, args.hw,

@@ -59,7 +59,20 @@ The remote stages use local config files. Set their SSH targets and paths before
 It copies the VNNX file back and records command output, exit codes, size and SHA-256 when a run directory is set.
 `sim` copies the model, input array and small SDK runner to the tools host. It copies a raw output archive back.
 `infer` copies the runner, model and binary input to the kit. It copies binary output and JSON metadata back.
-Dry runs print every SSH and SCP command without contacting either host.
+`infer --input input.int8.npy` plans a conversion to the adjacent `input.int8.bin`.
+Dry runs print the sample count, byte count, payload SHA-256 and every SSH and SCP command.
+They do not write the binary payload or contact either host. An explicit `--run-dir` can write plan and attempt records.
+During execution, an existing identical binary is reused. A different binary causes an error; use
+`--overwrite-payload` to replace it intentionally. The output and runner JSON directories are created before transfer.
+Inference plans accept a `.bin` path only; the CLI performs `.npy` conversion for execution.
+The same conversion handles non-contiguous arrays in C element order and rejects empty or non-int8 samples.
+
+Config files require `ssh_target` and `remote_dir` for the kit, or `ssh_target`, `remote_work_dir`
+and `size_config` for the tools host. Optional `timeouts` are seconds per remote command:
+`{compile: null, sim: 1800, infer: 300}` by default. `null` means no subprocess timeout.
+Set a longer compile timeout only when needed. The runner's `--timeout-ms` is a separate device-call limit.
+Each remote command uses the stage timeout, including transfers. A timeout is recorded in the stage manifest
+when `--run-dir` is set. Remote paths with spaces are quoted in SSH scripts and SCP targets.
 `compare` checks float and TFLite outputs. It checks simulator and hardware outputs when supplied.
 
 The kit runner CLI contract is `vbx_run --model m.vnnx --input in.bin --output out.bin --timeout-ms N --json meta.json`.

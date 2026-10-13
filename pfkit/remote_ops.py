@@ -17,17 +17,46 @@ def _q(parts):
     return shlex.join([str(p) for p in parts])
 
 
-def load_config(path):
-    return yaml.safe_load(Path(path).read_text())
+def load_config(path, kind):
+    if kind not in ("toolshost", "kit"):
+        raise ValueError(f"unknown config kind: {kind}")
+    cfg = yaml.safe_load(Path(path).read_text())
+    if not isinstance(cfg, dict):
+        raise ValueError(f"{path}: expected a {kind} config mapping")
+    required = ("ssh_target", "remote_work_dir", "size_config") if kind == "toolshost" else ("ssh_target", "remote_dir")
+    for key in required:
+        if not isinstance(cfg.get(key), str) or not cfg[key].strip():
+            raise ValueError(f"{path}: missing key '{key}' for a {kind} config")
+    configured = cfg.get("timeouts", {})
+    if not isinstance(configured, dict):
+        raise ValueError(f"{path}: timeouts must be a mapping")
+    defaults = {"compile": None, "sim": 1800, "infer": 300}
+    for stage, value in configured.items():
+        if stage not in defaults or (value is not None and (type(value) is not int or value <= 0)):
+            raise ValueError(f"{path}: timeouts.{stage} must be a positive integer or null")
+    cfg["timeouts"] = {**defaults, **configured}
+    return cfg
 
 
 def _ssh(target, script):
     return ["ssh", target, script]
 
 
+def _r(path):
+    return shlex.quote(str(path))
+
+
+def _scp(target, path):
+    return f"{target}:{_r(path)}"
+
+
 def tools_command(cfg, script):
     prefix = shlex.split(cfg.get("command_prefix", ""))
     activate = cfg.get("venv_activate", "")
+    if activate.startswith("~/"):
+        activate = '"$HOME"/' + _r(activate[2:])
+    elif activate:
+        activate = _r(activate)
     inner = (f"source {activate} && " if activate else "") + script
     return _q(prefix + ["bash", "-lc", inner]) if prefix else _q(["bash", "-lc", inner])
 
@@ -37,56 +66,54 @@ def _plan_attempt_id(attempt_id):
 
 
 def compile_plan(model, output, config, attempt_id=None):
-    cfg = load_config(config)
+    cfg = load_config(config, "toolshost")
     target = cfg["ssh_target"]
     attempt_id = _plan_attempt_id(attempt_id)
     transfer = f"{cfg.get('transfer_dir', cfg['remote_work_dir'])}/{attempt_id}"
     work = f"{cfg['remote_work_dir']}/{attempt_id}"
     name = Path(model).name
     out = Path(output).name
-    cmds = [_ssh(target, f"mkdir -p {shlex.quote(transfer)}"),
-            ["scp", str(model), f"{target}:{transfer}/{name}"],
-            _ssh(target, tools_command(cfg, _q(["vnnx_compile", "-c", cfg["size_config"], "-t", f"{work}/{name}", "-o", f"{work}/{out}"]))),
-            ["scp", f"{target}:{transfer}/{out}", str(output)]]
+    cmds = [_ssh(target, f"mkdir -p {_r(transfer)}"),
+            ["scp", str(model), _scp(target, f"{transfer}/{name}")],
+            _ssh(target, tools_command(cfg, f"mkdir -p {_r(work)} && " +
+                                       _q(["vnnx_compile", "-c", cfg["size_config"], "-t", f"{work}/{name}", "-o", f"{work}/{out}"]))),
+            ["scp", _scp(target, f"{transfer}/{out}"), str(output)]]
     return cmds
 
 
 def sim_plan(model, input_file, output, config, attempt_id=None):
-    cfg = load_config(config)
+    cfg = load_config(config, "toolshost")
     target = cfg["ssh_target"]
     attempt_id = _plan_attempt_id(attempt_id)
     transfer = f"{cfg.get('transfer_dir', cfg['remote_work_dir'])}/{attempt_id}"
     work = f"{cfg['remote_work_dir']}/{attempt_id}"
     script = Path(__file__).parent / "remote" / "vbx_sim_run.py"
-    cmds = [_ssh(target, f"mkdir -p {shlex.quote(transfer)}"),
-            ["scp", str(model), str(input_file), str(script), f"{target}:{transfer}/"],
-            _ssh(target, tools_command(cfg, _q(["python", f"{work}/vbx_sim_run.py", "--model", f"{work}/{Path(model).name}",
-                                       "--input", f"{work}/{Path(input_file).name}", "--output", f"{work}/{Path(output).name}"]))),
-            ["scp", f"{target}:{transfer}/{Path(output).name}", str(output)]]
+    cmds = [_ssh(target, f"mkdir -p {_r(transfer)}"),
+            ["scp", str(model), str(input_file), str(script), _scp(target, f"{transfer}/")],
+            _ssh(target, tools_command(cfg, f"mkdir -p {_r(work)} && " +
+                                       _q(["python", f"{work}/vbx_sim_run.py", "--model", f"{work}/{Path(model).name}",
+                                           "--input", f"{work}/{Path(input_file).name}", "--output", f"{work}/{Path(output).name}"]))),
+            ["scp", _scp(target, f"{transfer}/{Path(output).name}"), str(output)]]
     return cmds
 
 
 def infer_plan(model, input_file, output, metadata, runner, config, timeout_ms, attempt_id=None):
     input_file = Path(input_file)
     if input_file.suffix == ".npy":
-        import numpy as np
-        samples = np.load(input_file, allow_pickle=False)
-        if samples.dtype != np.int8 or samples.ndim < 2 or samples.shape[0] < 1:
-            raise ValueError("inference input .npy must contain K >= 1 int8 samples")
-        binary = input_file.with_suffix(".bin")
-        np.ascontiguousarray(samples).tofile(binary)
-        input_file = binary
-    cfg = load_config(config)
+        raise ValueError("infer_plan takes the .bin payload; the CLI converts .npy before execution")
+    if input_file.suffix != ".bin":
+        raise ValueError("infer_plan takes the .bin payload; the CLI converts .npy before execution")
+    cfg = load_config(config, "kit")
     attempt_id = _plan_attempt_id(attempt_id)
     target, directory = cfg["ssh_target"], f"{cfg['remote_dir']}/{attempt_id}"
     paths = [Path(runner), Path(model), Path(input_file)]
-    commands = [_ssh(target, f"mkdir -p {shlex.quote(directory)}"),
-                ["scp", *map(str, paths), f"{target}:{directory}/"],
+    commands = [_ssh(target, f"mkdir -p {_r(directory)}"),
+                ["scp", *map(str, paths), _scp(target, f"{directory}/")],
                 _ssh(target, _q([f"{directory}/{Path(runner).name}", "--model", f"{directory}/{Path(model).name}",
                                  "--input", f"{directory}/{Path(input_file).name}", "--output", f"{directory}/{Path(output).name}",
                                  "--timeout-ms", str(timeout_ms), "--json", f"{directory}/{Path(metadata).name}"])),
-                ["scp", f"{target}:{directory}/{Path(output).name}", str(output)],
-                ["scp", f"{target}:{directory}/{Path(metadata).name}", str(metadata)]]
+                ["scp", _scp(target, f"{directory}/{Path(output).name}"), str(output)],
+                ["scp", _scp(target, f"{directory}/{Path(metadata).name}"), str(metadata)]]
     return commands
 
 

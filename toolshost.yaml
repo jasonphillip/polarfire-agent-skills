@@ -4,3 +4,4 @@ venv_activate: ~/vbx-env/bin/activate
 transfer_dir: /c/pfkit-work
 remote_work_dir: /mnt/c/pfkit-work
 size_config: V250
+# timeouts: {compile: null, sim: 1800, infer: 300}   # seconds; null = no limit

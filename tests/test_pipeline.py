@@ -59,14 +59,16 @@ def test_multi_sample_hardware_compare(tmp_path):
         load_hardware_outputs(path, sim.shape)
 
 
-def test_infer_plan_converts_multi_sample_npy(tmp_path):
+def test_infer_plan_takes_bin_only(tmp_path):
     from pfkit.remote_ops import infer_plan
     path = tmp_path / "input.int8.npy"
     values = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int8)
     np.save(path, values)
     root = Path(__file__).resolve().parents[1]
-    commands = infer_plan("model.vnnx", path, "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
-    assert path.with_suffix(".bin").read_bytes() == values.tobytes()
+    with pytest.raises(ValueError, match=r"infer_plan takes the \.bin payload"):
+        infer_plan("model.vnnx", path, "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
+    assert not path.with_suffix(".bin").exists()
+    commands = infer_plan("model.vnnx", path.with_suffix(".bin"), "hw.bin", "hw.json", "vbx_run", root / "kit.yaml", 1000)
     assert str(path.with_suffix(".bin")) in commands[1]
 
 
