@@ -58,7 +58,12 @@ def report(run_dir):
     for name in ("dataset.manifest.json", "training.json", "eval.json", "export.manifest.json", "compile.json", "sim.json", "infer.json", "compare.json"):
         path = directory / name
         if path.exists():
-            lines.append(f"- {name}: recorded")
+            if name in ("compile.json", "sim.json", "infer.json"):
+                status = json.loads(path.read_text()).get("status", "not run")
+                label = "recorded" if status == "completed" else "failed" if status == "failed" else "not run"
+            else:
+                label = "recorded"
+            lines.append(f"- {name}: {label}")
         else:
             lines.append(f"- {name}: not run")
     (directory / "summary.md").write_text("\n".join(lines) + "\n")

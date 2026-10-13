@@ -254,6 +254,14 @@ def load_hardware_outputs(path, shape):
 def compare(name, run_dir, inputs=None, sim=None, hw=None, lsb_tolerance=0, scope="requested"):
     if scope not in ("requested", "full"):
         raise ValueError(f"Unknown comparison scope: {scope}")
+    infer_record = Path(run_dir) / "infer.json"
+    if hw is not None and infer_record.is_file():
+        infer_status = json.loads(infer_record.read_text()).get("status")
+        if infer_status == "failed":
+            report = compare_arrays(None, None, required=CHECKS if scope == "full" else ("sim_vs_hw",))
+            report.update(status="incomplete", reason="inference stage failed")
+            write_json(Path(run_dir) / "compare.json", report)
+            return report
     import tensorflow as tf
     import torch
     cfg, _ = example_module(name)

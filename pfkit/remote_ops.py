@@ -4,9 +4,12 @@ import hashlib
 import json
 import shlex
 import subprocess
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 import yaml
 from .pipeline import write_json, sha256
+from .errors import RemoteCommandError
 
 
 def _q(parts):
@@ -79,21 +82,47 @@ def infer_plan(model, input_file, output, metadata, runner, config, timeout_ms):
     return commands
 
 
-def run_plan(commands, dry_run=False, manifest=None):
+def run_plan(commands, dry_run=False, manifest=None, timeout_s=None):
     records = []
+
+    def output_text(value):
+        if isinstance(value, bytes):
+            return value.decode(errors="replace")
+        return value or ""
+
+    def flush():
+        if manifest:
+            write_json(manifest, {"commands": records})
+
     for argv in commands:
+        argv = [str(arg) for arg in argv]
         print(_q(argv))
+        record = {"argv": argv, "command": _q(argv), "executed": False,
+                  "started_utc": None, "finished_utc": None, "exit_code": "not run",
+                  "stdout": "", "stderr": "", "error": None}
+        records.append(record)
         if dry_run:
-            records.append({"command": _q(argv), "exit_code": "not run"})
+            flush()
             continue
-        result = subprocess.run(argv, text=True, capture_output=True)
-        records.append({"command": _q(argv), "exit_code": result.returncode,
-                        "stdout": result.stdout, "stderr": result.stderr})
-        if result.stdout: print(result.stdout, end="")
-        if result.stderr: print(result.stderr, end="", file=__import__("sys").stderr)
-        if result.returncode:
-            if manifest: write_json(manifest, {"commands": records})
-            raise RuntimeError(f"Command failed with exit {result.returncode}: {_q(argv)}")
-    if manifest:
-        write_json(manifest, {"commands": records})
+        record["started_utc"] = datetime.now(timezone.utc).isoformat()
+        try:
+            result = subprocess.run(argv, text=True, capture_output=True, timeout=timeout_s)
+            record.update(executed=True, exit_code=result.returncode,
+                          stdout=result.stdout, stderr=result.stderr)
+        except subprocess.TimeoutExpired as expired:
+            record.update(executed=True, exit_code="timeout",
+                          stdout=output_text(expired.stdout), stderr=output_text(expired.stderr),
+                          error=f"timed out after {timeout_s} s")
+        except OSError as error:
+            record.update(exit_code="not run", error=str(error))
+        record["finished_utc"] = datetime.now(timezone.utc).isoformat()
+        flush()
+        if record["stdout"]:
+            print(record["stdout"], end="")
+        if record["stderr"]:
+            print(record["stderr"], end="", file=sys.stderr)
+        if record["exit_code"] != 0:
+            detail = (f"Command could not start: {record['error']}" if not record["executed"] else
+                      f"Command failed with exit {record['exit_code']}: {_q(argv)}")
+            raise RemoteCommandError(detail, records)
     return records
