@@ -1,0 +1,655 @@
+{
+  "attempt_id": "manual-20261014-171644-c25fe6a0",
+  "blocking_flags": [],
+  "flags": [
+    "per-channel quantization tensor 3",
+    "per-channel quantization tensor 4",
+    "per-channel quantization tensor 5",
+    "per-channel quantization tensor 6",
+    "per-channel quantization tensor 7",
+    "per-channel quantization tensor 8"
+  ],
+  "inputs": {
+    "model_sha256": "e3b55da96ee633a58109007d4244304e2ad4a22853b10335fa41879e815b5371",
+    "payload_sha256": null
+  },
+  "limit_violations": [],
+  "operators": [
+    {
+      "index": 0,
+      "inputs": [
+        0,
+        8,
+        7
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 1,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 2
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        9
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 1,
+      "inputs": [
+        9,
+        6,
+        5
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 1,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 2
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        10
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 2,
+      "inputs": [
+        10,
+        4,
+        3
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 1,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 2
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        11
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    },
+    {
+      "index": 3,
+      "inputs": [
+        11,
+        2,
+        1
+      ],
+      "operator": "CONV_2D",
+      "options": {
+        "DilationHFactor": 1,
+        "DilationWFactor": 1,
+        "FusedActivationFunction": 0,
+        "Padding": 1,
+        "QuantizedBiasType": 0,
+        "StrideH": 1,
+        "StrideW": 1
+      },
+      "options_type": "Conv2DOptions",
+      "outputs": [
+        12
+      ],
+      "sdk_limits": {
+        "Fused activation function": "0,NONE,RELU,RELU6",
+        "Padding": "SAME,VALID"
+      },
+      "subgraph": 0,
+      "supported": true
+    }
+  ],
+  "status": "completed",
+  "tensors": [
+    {
+      "buffer": 1,
+      "dtype": "INT8",
+      "index": 0,
+      "name": "serving_default_odmr_input:0",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.007843137718737125
+        ],
+        "zero_points": [
+          -1
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        100,
+        2
+      ],
+      "shape_signature": [
+        1,
+        1,
+        100,
+        2
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 2,
+      "dtype": "INT32",
+      "index": 1,
+      "name": "fcnn_v2_dataset_a_1/conv_head_1/Add;fcnn_v2_dataset_a_1/conv_head_1/convolution;fcnn_v2_dataset_a_1/conv_head_1/Reshape",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.00016909219266381115
+        ],
+        "zero_points": [
+          0
+        ]
+      },
+      "shape": [
+        1
+      ],
+      "shape_signature": [
+        1
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 3,
+      "dtype": "INT8",
+      "index": 2,
+      "name": "fcnn_v2_dataset_a_1/conv_head_1/convolution",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.011974654160439968
+        ],
+        "zero_points": [
+          0
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "shape_signature": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 4,
+      "dtype": "INT32",
+      "index": 3,
+      "name": "fcnn_v2_dataset_a_1/conv_2_1/Relu;fcnn_v2_dataset_a_1/conv_2_1/BiasAdd;fcnn_v2_dataset_a_1/conv_2_1/convolution;fcnn_v2_dataset_a_1/conv_2_1/Squeeze",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          6.25717657385394e-05,
+          9.160630725091323e-05,
+          8.857541979523376e-05,
+          5.3520314395427704e-05,
+          0.0001621910196263343,
+          6.888256029924378e-05,
+          7.966528210090473e-05,
+          7.087992707965896e-05,
+          5.460878674057312e-05,
+          6.378372927429155e-05,
+          8.127634646371007e-05,
+          0.00013838040467817336,
+          6.782769196433946e-05,
+          6.106104410719126e-05,
+          8.586730837123469e-05,
+          6.524660420836881e-05,
+          4.2446648876648396e-05,
+          0.00010147557622985914,
+          9.403823059983552e-05,
+          6.188645056681708e-05,
+          0.0001275773684028536,
+          5.3183171985438094e-05,
+          6.260935333557427e-05,
+          4.961323065799661e-05
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        24
+      ],
+      "shape_signature": [
+        24
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 5,
+      "dtype": "INT8",
+      "index": 4,
+      "name": "fcnn_v2_dataset_a_1/conv_2_1/convolution",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.006342549342662096,
+          0.009285618551075459,
+          0.008978393860161304,
+          0.005425054579973221,
+          0.016440395265817642,
+          0.0069822389632463455,
+          0.008075223304331303,
+          0.007184701506048441,
+          0.005535386968404055,
+          0.006465399172157049,
+          0.008238527923822403,
+          0.014026845805346966,
+          0.006875312887132168,
+          0.006189416162669659,
+          0.008703888393938541,
+          0.006613682955503464,
+          0.00430257897824049,
+          0.010286010801792145,
+          0.00953212846070528,
+          0.006273082923144102,
+          0.012931803241372108,
+          0.005390880163758993,
+          0.006346359383314848,
+          0.005029015243053436
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        24,
+        1,
+        5,
+        16
+      ],
+      "shape_signature": [
+        24,
+        1,
+        5,
+        16
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 6,
+      "dtype": "INT32",
+      "index": 5,
+      "name": "fcnn_v2_dataset_a_1/conv_1_1/Relu;fcnn_v2_dataset_a_1/conv_1_1/BiasAdd;fcnn_v2_dataset_a_1/conv_1_1/convolution;fcnn_v2_dataset_a_1/conv_1_1/Squeeze",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.00010248898615827784,
+          9.841295832302421e-05,
+          8.006877760635689e-05,
+          8.183422323781997e-05,
+          9.714456246001646e-05,
+          0.00010522814409341663,
+          0.00010388997179688886,
+          9.365339792566374e-05,
+          8.906474977266043e-05,
+          0.0001503211969975382,
+          8.321213681483641e-05,
+          7.325541810132563e-05,
+          6.0432805184973404e-05,
+          7.484147499781102e-05,
+          0.00010605828720144928,
+          0.00010440257756272331
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        16
+      ],
+      "shape_signature": [
+        16
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 7,
+      "dtype": "INT8",
+      "index": 6,
+      "name": "fcnn_v2_dataset_a_1/conv_1_1/convolution",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.007969096302986145,
+          0.007652162108570337,
+          0.0062257987447083,
+          0.00636307243257761,
+          0.007553537376224995,
+          0.008182081393897533,
+          0.008078031241893768,
+          0.007282079663127661,
+          0.0069252862595021725,
+          0.011688319966197014,
+          0.006470212712883949,
+          0.00569602195173502,
+          0.004698991309851408,
+          0.005819346755743027,
+          0.008246629498898983,
+          0.008117889054119587
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        16,
+        1,
+        5,
+        8
+      ],
+      "shape_signature": [
+        16,
+        1,
+        5,
+        8
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 8,
+      "dtype": "INT32",
+      "index": 7,
+      "name": "fcnn_v2_dataset_a_1/conv_0_1/Relu;fcnn_v2_dataset_a_1/conv_0_1/BiasAdd;fcnn_v2_dataset_a_1/conv_0_1/convolution;fcnn_v2_dataset_a_1/conv_0_1/Squeeze",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          4.98782355862204e-05,
+          0.00010575916530797258,
+          6.112208939157426e-05,
+          7.698327681282535e-05,
+          6.144127837615088e-05,
+          7.001351332291961e-05,
+          7.527267007390037e-05,
+          4.6615976316388696e-05
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        8
+      ],
+      "shape_signature": [
+        8
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 9,
+      "dtype": "INT8",
+      "index": 8,
+      "name": "fcnn_v2_dataset_a_1/conv_0_1/convolution",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.00635947473347187,
+          0.013484292663633823,
+          0.0077930656261742115,
+          0.009815366938710213,
+          0.007833762094378471,
+          0.008926722221076488,
+          0.009597265161573887,
+          0.0059435367584228516
+        ],
+        "zero_points": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "shape": [
+        8,
+        1,
+        5,
+        2
+      ],
+      "shape_signature": [
+        8,
+        1,
+        5,
+        2
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 10,
+      "dtype": "INT8",
+      "index": 9,
+      "name": "fcnn_v2_dataset_a_1/conv_0_1/Relu;fcnn_v2_dataset_a_1/conv_0_1/BiasAdd;fcnn_v2_dataset_a_1/conv_0_1/convolution;fcnn_v2_dataset_a_1/conv_0_1/Squeeze1",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.012860803864896297
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        48,
+        8
+      ],
+      "shape_signature": [
+        1,
+        1,
+        48,
+        8
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 11,
+      "dtype": "INT8",
+      "index": 10,
+      "name": "fcnn_v2_dataset_a_1/conv_1_1/Relu;fcnn_v2_dataset_a_1/conv_1_1/BiasAdd;fcnn_v2_dataset_a_1/conv_1_1/convolution;fcnn_v2_dataset_a_1/conv_1_1/Squeeze1",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.009865396656095982
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        22,
+        16
+      ],
+      "shape_signature": [
+        1,
+        1,
+        22,
+        16
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 12,
+      "dtype": "INT8",
+      "index": 11,
+      "name": "fcnn_v2_dataset_a_1/conv_2_1/Relu;fcnn_v2_dataset_a_1/conv_2_1/BiasAdd;fcnn_v2_dataset_a_1/conv_2_1/convolution;fcnn_v2_dataset_a_1/conv_2_1/Squeeze1",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.014120841398835182
+        ],
+        "zero_points": [
+          -128
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "shape_signature": [
+        1,
+        1,
+        9,
+        24
+      ],
+      "subgraph": 0
+    },
+    {
+      "buffer": 13,
+      "dtype": "INT8",
+      "index": 12,
+      "name": "StatefulPartitionedCall_1:0",
+      "quantization": {
+        "quantized_dimension": 0,
+        "scales": [
+          0.022874947637319565
+        ],
+        "zero_points": [
+          1
+        ]
+      },
+      "shape": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shape_signature": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "subgraph": 0
+    }
+  ],
+  "unsupported": []
+}

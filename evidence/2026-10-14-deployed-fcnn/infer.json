@@ -1,0 +1,108 @@
+{
+  "attempt_id": "manual-20261014-171644-c25fe6a0",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "mkdir -p /tmp/pfkit/manual-20261014-171644-c25fe6a0"
+      ],
+      "command": "ssh root@<kit> 'mkdir -p /tmp/pfkit/manual-20261014-171644-c25fe6a0'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:17:46.233884+00:00",
+      "started_utc": "2026-10-14T17:17:45.438430+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<kit-root>/hw/vbx_run",
+        "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.vnnx",
+        "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/input.int8.bin",
+        "root@<kit>:/tmp/pfkit/manual-20261014-171644-c25fe6a0/"
+      ],
+      "command": "scp <kit-root>/hw/vbx_run <home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.vnnx <home>/projects/portfolio-publication/work/kit-run-2026-10-14/input.int8.bin root@<kit>:/tmp/pfkit/manual-20261014-171644-c25fe6a0/",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:17:47.118305+00:00",
+      "started_utc": "2026-10-14T17:17:46.234181+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "root@<kit>",
+        "/tmp/pfkit/manual-20261014-171644-c25fe6a0/vbx_run --model /tmp/pfkit/manual-20261014-171644-c25fe6a0/model.vnnx --input /tmp/pfkit/manual-20261014-171644-c25fe6a0/input.int8.bin --output /tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.bin --timeout-ms 5000 --json /tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.json"
+      ],
+      "command": "ssh root@<kit> '/tmp/pfkit/manual-20261014-171644-c25fe6a0/vbx_run --model /tmp/pfkit/manual-20261014-171644-c25fe6a0/model.vnnx --input /tmp/pfkit/manual-20261014-171644-c25fe6a0/input.int8.bin --output /tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.bin --timeout-ms 5000 --json /tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.json'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:17:48.713123+00:00",
+      "started_utc": "2026-10-14T17:17:47.118823+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.bin",
+        "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/hw.bin"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.bin <home>/projects/portfolio-publication/work/kit-run-2026-10-14/hw.bin",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:17:49.528843+00:00",
+      "started_utc": "2026-10-14T17:17:48.713430+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "root@<kit>:/tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.json",
+        "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/hw.json"
+      ],
+      "command": "scp root@<kit>:/tmp/pfkit/manual-20261014-171644-c25fe6a0/hw.json <home>/projects/portfolio-publication/work/kit-run-2026-10-14/hw.json",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:17:50.337726+00:00",
+      "started_utc": "2026-10-14T17:17:49.529168+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/kit.yaml",
+    "values": {
+      "remote_dir": "/tmp/pfkit",
+      "ssh_target": "root@<kit>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      }
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "55bf88b72725c7b252ab48107436cd31427fb86da81a207fc19ab0afad06f5b9",
+    "payload_sha256": null,
+    "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771"
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/hw.bin",
+    "sha256": "080474358d3a1efeacc89cc946821e7e8446db266f84fa433cdbc0598748ec90",
+    "size_bytes": 512
+  },
+  "runner_sha256": "663504a508164c472f8edfc0dc1164ac6dc58f7e0ac53910b95887fb4f31c771",
+  "status": "completed"
+}

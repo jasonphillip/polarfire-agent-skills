@@ -1,0 +1,93 @@
+{
+  "attempt_id": "manual-20261014-171644-c25fe6a0",
+  "commands": [
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "mkdir -p pfkit-work/manual-20261014-171644-c25fe6a0"
+      ],
+      "command": "ssh <tools-host> 'mkdir -p pfkit-work/manual-20261014-171644-c25fe6a0'",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:16:45.532028+00:00",
+      "started_utc": "2026-10-14T17:16:45.305329+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.tflite",
+        "<tools-host>:pfkit-work/manual-20261014-171644-c25fe6a0/model.tflite"
+      ],
+      "command": "scp <home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.tflite <tools-host>:pfkit-work/manual-20261014-171644-c25fe6a0/model.tflite",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:16:45.761575+00:00",
+      "started_utc": "2026-10-14T17:16:45.532329+00:00",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "ssh",
+        "<tools-host>",
+        "wsl.exe -d Ubuntu -- bash -lc 'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/manual-20261014-171644-c25fe6a0 && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/manual-20261014-171644-c25fe6a0/model.tflite -o <tools-host-home>/pfkit-work/manual-20261014-171644-c25fe6a0/model.vnnx'"
+      ],
+      "command": "ssh <tools-host> 'wsl.exe -d Ubuntu -- bash -lc '\"'\"'source \"$HOME\"/vbx-env/bin/activate && mkdir -p <tools-host-home>/pfkit-work/manual-20261014-171644-c25fe6a0 && vnnx_compile -c V250 -t <tools-host-home>/pfkit-work/manual-20261014-171644-c25fe6a0/model.tflite -o <tools-host-home>/pfkit-work/manual-20261014-171644-c25fe6a0/model.vnnx'\"'\"''",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:16:52.593040+00:00",
+      "started_utc": "2026-10-14T17:16:45.761868+00:00",
+      "stderr": "2026-10-14 13:16:49.183584: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.\n2026-10-14 13:16:49.441098: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nINFO: Created TensorFlow Lite XNNPACK delegate for CPU.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "scp",
+        "<tools-host>:pfkit-work/manual-20261014-171644-c25fe6a0/model.vnnx",
+        "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.vnnx"
+      ],
+      "command": "scp <tools-host>:pfkit-work/manual-20261014-171644-c25fe6a0/model.vnnx <home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.vnnx",
+      "error": null,
+      "executed": true,
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T17:16:52.833345+00:00",
+      "started_utc": "2026-10-14T17:16:52.593359+00:00",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "config": {
+    "path": "<config>/toolshost.yaml",
+    "values": {
+      "command_prefix": "wsl.exe -d Ubuntu --",
+      "remote_work_dir": "<tools-host-home>/pfkit-work",
+      "size_config": "V250",
+      "ssh_target": "<tools-host>",
+      "timeouts": {
+        "compile": null,
+        "infer": 300,
+        "sim": 1800
+      },
+      "transfer_dir": "pfkit-work",
+      "venv_activate": "~/vbx-env/bin/activate"
+    }
+  },
+  "error": null,
+  "inputs": {
+    "model_sha256": "e3b55da96ee633a58109007d4244304e2ad4a22853b10335fa41879e815b5371",
+    "payload_sha256": null
+  },
+  "local_python": "pip-freeze.txt describes the local Python environment, not the tools host",
+  "output": {
+    "path": "<home>/projects/portfolio-publication/work/kit-run-2026-10-14/model.vnnx",
+    "sha256": "55bf88b72725c7b252ab48107436cd31427fb86da81a207fc19ab0afad06f5b9",
+    "size_bytes": 12832
+  },
+  "status": "completed"
+}
