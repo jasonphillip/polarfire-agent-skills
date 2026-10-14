@@ -1,7 +1,6 @@
 # Run summary
 
-Revisions are in `revisions.json`. Commands and exit codes are in `commands.jsonl`.
-Package versions are in `pip-freeze.txt`. Artifact hashes are in `artifacts.json`.
+Revisions, commands and exit codes, package versions and artifact hashes (`revisions.json`, `commands.jsonl`, `pip-freeze.txt`, `artifacts.json`) are run-directory records that hold host paths; they are not published here. The commands, the kit facts and the model hashes are in `README.md` in this folder and in the odmr-edge-ml report this run belongs to.
 
 - dataset.manifest.json: not run
 - training.json: not run
