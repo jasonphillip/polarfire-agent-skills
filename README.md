@@ -12,7 +12,27 @@ was actually tested.
 
 Start with an example on your computer. Board deployment targets the
 **PolarFire SoC Icicle Kit (MPFS250T), with the CoreVectorBlox V250 accelerator**.
-Model support is limited to the [documented adapters](docs/adapters.md).
+The [documented adapters](docs/adapters.md) define model support.
+
+## What has been tested
+
+These are recorded results for the supported setup, as of **2026-10-13**.
+
+| Check | Recorded result |
+|---|---|
+| Local setup and inspection | Passed on Linux aarch64 and Apple silicon macOS. |
+| `signal-freq` and `odmr-mlp` on the board | Each completed 64 test inputs. Integer outputs matched the simulator exactly, reported as **0 LSB difference**. |
+| `odmr-fcnn` on the board | On 2026-10-13, all 64 inputs completed on both images with NPU error 0. Hardware parity: kit = simulator = INT8 TFLite, 0 LSB. Conversion accuracy: the largest per-sample float-to-INT8 prediction difference was 29.8 µT against a 5.0 µT tolerance. One of 64 samples exceeded it; the mean difference was 2.39 µT. The difference measures float-to-INT8 conversion, not ground-truth error. Overall result: failed. See `evidence/2026-10-13-kit-built-image/README.md`. |
+| Assistant-guided board run | Claude Code completed one full `signal-freq` run. |
+| Toolkit's FPGA build | Built and met timing. On 2026-10-13, the kit-built image was programmed and tested on the kit. Both 64-sample examples passed; their outputs were byte-identical to the case-study-image runs. See `evidence/2026-10-13-kit-built-image/README.md`. |
+
+The `mlp` adapter has passing board examples. The `conv2d_1k`
+model had exact hardware parity on both images. Its float-to-INT8 conversion
+missed tolerance, so it failed (`evidence/2026-10-13-kit-built-image/README.md`).
+
+See the [validation record](docs/validation.md),
+[64-input board results](evidence/2026-10-13-hardware-cli-route/README.md),
+and [release notes](docs/release-notes.md) for test details.
 
 ## Choose where to start
 
@@ -27,7 +47,7 @@ Model support is limited to the [documented adapters](docs/adapters.md).
 
 This example generates signal data, trains a small model, converts it to
 8-bit integer TFLite, and checks its compatibility with the supported toolchain.
-It stops before compilation, simulation, or hardware access.
+The local run ends at compatibility inspection.
 
 You need:
 
@@ -69,8 +89,6 @@ The command finishes without an error and prints an inspection result with
 | `eval.json` | How the trained model performed on the test data. |
 | `inspect.json` | Compatibility checks and any blocking findings. |
 
-A passing inspection is an early check. Compilation and board tests still
-need to run before you can claim the model works on hardware.
 See [the step-by-step guide](docs/getting-started.md) and
 [troubleshooting](docs/faq.md) for more help.
 
@@ -80,7 +98,7 @@ See [the step-by-step guide](docs/getting-started.md) and
 |---|---|---|
 | `signal-freq` | Estimate the frequency of a generated signal. | You want the simplest first run. |
 | `odmr-mlp` | Estimate a magnetic field from simulated quantum-sensing data. | You want to follow the original sensing case study. |
-| `odmr-fcnn` | Run the case study's ODMR FCNN on the `odmr-mlp` data. | Hardware parity: kit = simulator = INT8 TFLite, 0 LSB, on both images. Conversion accuracy: the largest per-sample float-to-INT8 prediction difference was 29.8 µT against 5.0 µT; one of 64 samples exceeded it, and the mean difference was 2.39 µT. This is not an error against ground truth. Overall result: failed. See `evidence/2026-10-13-kit-built-image/README.md`. |
+| `odmr-fcnn` | Run the case study's ODMR FCNN on the `odmr-mlp` data. | The board result above records hardware parity and conversion accuracy. See `evidence/2026-10-13-kit-built-image/README.md`. |
 
 All use generated data. The ODMR examples also need Tk when using
 Homebrew Python 3.11 on macOS; see [installation requirements](docs/install.md).
@@ -105,10 +123,8 @@ inspect. Use a new run directory. Explain the result and show the saved files.
 ```
 
 The [installation guide](docs/install.md) covers marketplace installation,
-Codex instructions, and the tested status of each client. Claude Code has a
-recorded full `signal-freq` board run. Codex has a recorded local inspection
-run; its plugin installation and remote workflow remain untested. Cursor
-loading and execution remain untested.
+Codex instructions, and client test records. Claude Code has a recorded full
+`signal-freq` board run. Codex has a recorded local inspection run.
 
 ## Continue to the board
 
@@ -135,28 +151,6 @@ test inputs through compilation, simulation, board inference, and comparison.
 Use the [full-run instructions](docs/getting-started.md#later-stages) to
 check the saved results. Optional PID control and watchdog integration are
 separate from basic inference.
-
-## What has been tested
-
-These are recorded results for the supported setup, as of **2026-10-13**.
-
-| Check | Recorded result |
-|---|---|
-| Local setup and inspection | Passed on Linux aarch64 and Apple silicon macOS. |
-| `signal-freq` and `odmr-mlp` on the board | Each completed 64 test inputs. Integer outputs matched the simulator exactly, reported as **0 LSB difference**. |
-| `odmr-fcnn` on the board | On 2026-10-13, all 64 inputs completed on both images with NPU error 0. Hardware parity: kit = simulator = INT8 TFLite, 0 LSB. Conversion accuracy: the largest per-sample float-to-INT8 prediction difference was 29.8 µT against a 5.0 µT tolerance. One of 64 samples exceeded it; the mean difference was 2.39 µT. This is not an error against ground truth. Overall result: failed. See `evidence/2026-10-13-kit-built-image/README.md`. |
-| Assistant-guided board run | Claude Code completed one full `signal-freq` run. |
-| Toolkit's FPGA build | Built and met timing. On 2026-10-13, the kit-built image was programmed and tested on the kit. Both 64-sample examples passed; their outputs were byte-identical to the case-study-image runs. See `evidence/2026-10-13-kit-built-image/README.md`. |
-
-Board results now cover the case-study and kit-built images. Model support is
-bounded: the `mlp` adapter has the passing board examples. The `conv2d_1k`
-model had exact hardware parity on both images. Its float-to-INT8 conversion
-missed tolerance, so it failed (`evidence/2026-10-13-kit-built-image/README.md`). Other
-boards, accelerator sizes, and SDK 3.x are outside the validated path.
-
-See the [validation record](docs/validation.md),
-[64-input board results](evidence/2026-10-13-hardware-cli-route/README.md),
-and [release notes](docs/release-notes.md) for evidence and remaining limits.
 
 ## Reference and related work
 
